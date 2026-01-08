@@ -1,0 +1,473 @@
+from flask import Flask, request, jsonify, render_template_string
+from supabase import create_client, Client
+import os
+from dotenv import load_dotenv
+from flask_cors import CORS
+
+load_dotenv()
+
+app = Flask(__name__)
+CORS(app)
+
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(url, key)
+
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartStock - ניהול עסק</title>
+    
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2897/2897785.png" type="image/png">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* עיצוב כרטיסיות (Tabs) משופר */
+        .nav-pills .nav-link {
+            color: rgba(255,255,255,0.8);
+            border-radius: 50px;
+            padding: 8px 20px;
+            margin-left: 10px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .nav-pills .nav-link:hover { background-color: rgba(255,255,255,0.2); color: white; }
+        .nav-pills .nav-link.active {
+            background-color: white;
+            color: #0d6efd; /* צבע הראשי של המותג */
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .auth-card { max-width: 400px; margin: 60px auto; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .stat-card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; background: white; padding: 20px; height: 100%; }
+        .stat-card:hover { transform: translateY(-5px); }
+        
+        .business-logo { max-height: 40px; margin-left: 10px; border-radius: 5px; }
+        .chart-container { position: relative; height: 250px; width: 100%; }
+        .badge-cat { background-color: #e7f1ff; color: #0c63e4; border: 1px solid #b6d4fe; }
+        .badge-sup { background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; }
+        .link-text { cursor: pointer; color: #0d6efd; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="login-section">
+        <div class="card auth-card bg-white">
+            <h2 class="text-center mb-4 text-primary fw-bold"><i class="fas fa-cubes"></i> SmartStock</h2>
+            <h5 class="text-center mb-4">כניסה למערכת</h5>
+            <div class="mb-3"><label class="form-label">אימייל</label><input type="email" id="login-email" class="form-control"></div>
+            <div class="mb-3"><label class="form-label">סיסמה</label><input type="password" id="login-password" class="form-control"></div>
+            <button class="btn btn-primary w-100 py-2 fw-bold" onclick="login()">התחבר</button>
+            <div class="text-center mt-3"><small>אין לך חשבון? <span class="link-text" onclick="showRegister()">הירשם כאן</span></small></div>
+            <p id="login-msg" class="text-danger text-center mt-3 fw-bold"></p>
+        </div>
+    </div>
+
+    <div class="container d-none" id="register-section">
+        <div class="card auth-card bg-white">
+            <h2 class="text-center mb-4 text-success fw-bold"><i class="fas fa-user-plus"></i> הרשמה</h2>
+            <div class="mb-3"><label class="form-label">שם העסק</label><input type="text" id="reg-business" class="form-control"></div>
+            <div class="mb-3"><label class="form-label">אימייל</label><input type="email" id="reg-email" class="form-control"></div>
+            <div class="mb-3"><label class="form-label">סיסמה</label><input type="password" id="reg-password" class="form-control"></div>
+            <button class="btn btn-success w-100 py-2 fw-bold" onclick="register()">צור חשבון</button>
+            <div class="text-center mt-3"><small>כבר יש לך חשבון? <span class="link-text" onclick="showLogin()">התחבר כאן</span></small></div>
+            <p id="reg-msg" class="text-center mt-3 fw-bold"></p>
+        </div>
+    </div>
+
+    <div class="d-none" id="main-app">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4 py-3">
+            <div class="container">
+                <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
+                    <img id="nav-logo-img" src="" class="d-none business-logo bg-white p-1">
+                    <span id="nav-business-name"><i class="fas fa-cubes"></i> SmartStock</span>
+                </a>
+                
+                <div class="collapse navbar-collapse justify-content-center">
+                    <ul class="nav nav-pills" id="mainNav">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="nav-dashboard" onclick="switchTab('dashboard')"><i class="fas fa-chart-line"></i> דשבורד</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="nav-profile" onclick="switchTab('profile')"><i class="fas fa-store"></i> פרופיל עסק</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <button class="btn btn-outline-light btn-sm fw-bold" onclick="logout()"><i class="fas fa-sign-out-alt"></i> יציאה</button>
+            </div>
+        </nav>
+
+        <div class="container pb-5">
+            <div id="dashboard-section">
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4"><div class="stat-card"><div class="d-flex justify-content-between align-items-center"><div><h6 class="text-muted">סה"כ מוצרים</h6><h3 class="fw-bold mb-0" id="stat-total-items">0</h3></div><div class="icon-box text-primary fs-2"><i class="fas fa-boxes"></i></div></div></div></div>
+                    <div class="col-md-4"><div class="stat-card"><div class="d-flex justify-content-between align-items-center"><div><h6 class="text-muted">שווי מלאי</h6><h3 class="fw-bold mb-0 text-success" id="stat-total-value">₪0</h3></div><div class="icon-box text-success fs-2"><i class="fas fa-coins"></i></div></div></div></div>
+                    <div class="col-md-4"><div class="stat-card"><div class="d-flex justify-content-between align-items-center"><div><h6 class="text-muted">להזמנה דחופה</h6><h3 class="fw-bold mb-0 text-danger" id="stat-low-stock">0</h3></div><div class="icon-box text-danger fs-2"><i class="fas fa-exclamation-circle"></i></div></div></div></div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-4"><div class="stat-card"><h6 class="fw-bold mb-3 text-center">התפלגות לפי קטגוריות</h6><div class="chart-container"><canvas id="chartCategories"></canvas></div></div></div>
+                    <div class="col-lg-4"><div class="stat-card"><h6 class="fw-bold mb-3 text-center">ספקים מובילים</h6><div class="chart-container"><canvas id="chartSuppliers"></canvas></div></div></div>
+                    <div class="col-lg-4"><div class="stat-card"><h6 class="fw-bold mb-3 text-center">ערך מלאי לפי קטגוריה</h6><div class="chart-container"><canvas id="chartValue"></canvas></div></div></div>
+                </div>
+
+                <div class="card stat-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <h5 class="fw-bold mb-0">📦 ניהול מלאי</h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> ייצוא לאקסל</button>
+                            <div class="vr"></div>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="openCategoriesModal()"><i class="fas fa-tags"></i> קטגוריות</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="openSuppliersModal()"><i class="fas fa-truck"></i> ספקים</button>
+                            <button class="btn btn-primary btn-sm" onclick="openAddModal()"><i class="fas fa-plus"></i> הוסף מוצר</button>
+                        </div>
+                    </div>
+                    
+                    <input type="text" id="searchInput" class="form-control mb-3 bg-light border-0" placeholder="🔎 חפש מוצר לפי שם או מק״ט..." onkeyup="filterProducts()">
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="inventoryTable">
+                            <thead class="table-light"><tr><th>שם מוצר</th><th>קטגוריה וספק</th><th>מחיר</th><th>כמות</th><th>פעולות</th></tr></thead>
+                            <tbody id="products-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="profile-section" class="d-none">
+                <div class="card stat-card p-5 mx-auto" style="max-width: 800px;">
+                    <h3 class="fw-bold mb-4 text-primary"><i class="fas fa-store"></i> הגדרות עסק</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">שם העסק</label><input type="text" id="prof-name" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label">ח.פ / עוסק</label><input type="text" id="prof-id" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label">טלפון</label><input type="text" id="prof-phone" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label">כתובת</label><input type="text" id="prof-address" class="form-control"></div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">לוגו העסק</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="file" id="prof-file-input" class="form-control" accept="image/*" onchange="handleLogoUpload()">
+                                <input type="hidden" id="prof-logo-data"> </div>
+                            <div class="mt-3 text-center p-3 bg-light rounded">
+                                <img id="logo-preview" src="" class="d-none" style="max-height: 100px; border-radius: 8px;">
+                                <span id="no-logo-text" class="text-muted small">אין לוגו כרגע</span>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <button class="btn btn-primary btn-lg w-100" onclick="saveProfile()"><i class="fas fa-save"></i> שמור שינויים</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="productModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header bg-primary text-white"><h5 class="modal-title">מוצר</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="p-id"><input type="text" id="p-name" class="form-control mb-2" placeholder="שם המוצר"><div class="row g-2 mb-2"><div class="col-6"><label class="small text-muted">קטגוריה</label><select id="p-category" class="form-select"><option value="">בחר...</option></select></div><div class="col-6"><label class="small text-muted">ספק</label><select id="p-supplier" class="form-select"><option value="">בחר...</option></select></div></div><input type="text" id="p-sku" class="form-control mb-2" placeholder="מק״ט"><div class="row"><div class="col"><input type="number" id="p-qty" class="form-control" placeholder="כמות"></div><div class="col"><input type="number" id="p-price" class="form-control" placeholder="מחיר"></div></div></div><div class="modal-footer"><button class="btn btn-primary" onclick="saveProduct()">שמור</button></div></div></div></div>
+    <div class="modal fade" id="categoriesModal" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">קטגוריות</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="input-group mb-3"><input type="text" id="new-cat-name" class="form-control" placeholder="שם"><button class="btn btn-success" onclick="addCategory()"><i class="fas fa-plus"></i></button></div><ul class="list-group list-group-flush" id="categories-list-manage"></ul></div></div></div></div>
+    <div class="modal fade" id="suppliersModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">ספקים</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3 border-bottom pb-3"><input type="text" id="new-sup-name" class="form-control mb-2" placeholder="שם הספק"><input type="text" id="new-sup-phone" class="form-control mb-2" placeholder="טלפון"><button class="btn btn-success w-100" onclick="addSupplier()">הוסף</button></div><h6>רשימה:</h6><ul class="list-group list-group-flush" id="suppliers-list-manage"></ul></div></div></div></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = "http://127.0.0.1:5000"; 
+        let token = localStorage.getItem('token');
+        let allProducts=[], allCategories=[], allSuppliers=[], charts={cat:null,sup:null,val:null};
+
+        if (token) initApp();
+
+        // --- AUTH ---
+        function showRegister() { document.getElementById('login-section').classList.add('d-none'); document.getElementById('register-section').classList.remove('d-none'); }
+        function showLogin() { document.getElementById('register-section').classList.add('d-none'); document.getElementById('login-section').classList.remove('d-none'); }
+        async function register() {
+            const body = JSON.stringify({ email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value, business_name: document.getElementById('reg-business').value });
+            const res = await fetch(`${API_URL}/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body });
+            const msg = document.getElementById('reg-msg');
+            if (res.ok) { msg.innerText = "נרשמת בהצלחה! בדוק מייל."; msg.className="text-center mt-3 text-success fw-bold"; }
+            else { msg.innerText = (await res.json()).error; msg.className="text-center mt-3 text-danger fw-bold"; }
+        }
+        async function login() {
+            const body = JSON.stringify({ email: document.getElementById('login-email').value, password: document.getElementById('login-password').value });
+            const res = await fetch(`${API_URL}/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body });
+            const data = await res.json();
+            if (res.ok) { localStorage.setItem('token', data.access_token); token = data.access_token; initApp(); }
+            else { document.getElementById('login-msg').innerText = data.error; }
+        }
+        function logout() { localStorage.removeItem('token'); location.reload(); }
+
+        async function initApp() {
+            document.getElementById('login-section').classList.add('d-none'); document.getElementById('register-section').classList.add('d-none');
+            document.getElementById('main-app').classList.remove('d-none');
+            await loadProfile();
+            await Promise.all([loadCategories(), loadSuppliers()]);
+            await loadProducts();
+        }
+
+        // --- EXCEL EXPORT (חדש!) ---
+        function exportToExcel() {
+            // הכנת הנתונים לאקסל בצורה נקייה
+            const dataForExcel = allProducts.map(p => {
+                const cat = allCategories.find(c => c.id === p.category_id)?.name || 'ללא';
+                const sup = allSuppliers.find(s => s.id === p.supplier_id)?.name || 'ללא';
+                return {
+                    "שם מוצר": p.name,
+                    "מק״ט": p.sku,
+                    "קטגוריה": cat,
+                    "ספק": sup,
+                    "כמות": p.quantity,
+                    "מחיר מכירה": p.sell_price,
+                    "שווי מלאי": p.quantity * p.sell_price
+                };
+            });
+
+            // יצירת גיליון עבודה וקובץ
+            const ws = XLSX.utils.json_to_sheet(dataForExcel);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+            
+            // הורדה
+            XLSX.writeFile(wb, "SmartStock_Inventory.xlsx");
+        }
+
+        // --- UI LOGIC ---
+        function switchTab(tab) {
+            document.getElementById('dashboard-section').classList.add('d-none'); document.getElementById('profile-section').classList.add('d-none');
+            document.getElementById('nav-dashboard').classList.remove('active'); document.getElementById('nav-profile').classList.remove('active');
+            document.getElementById(tab+'-section').classList.remove('d-none'); document.getElementById('nav-'+tab).classList.add('active');
+        }
+
+        // --- IMAGE UPLOAD LOGIC (חדש! המרת קובץ ל-Base64) ---
+        function handleLogoUpload() {
+            const fileInput = document.getElementById('prof-file-input');
+            const file = fileInput.files[0];
+            
+            if (file) {
+                // בדיקת גודל (הגבלה ל-100KB כדי לא להכביד על הדאטהבייס)
+                if (file.size > 100000) {
+                    alert("הקובץ גדול מדי! אנא בחר תמונה קטנה מ-100KB (לוגו קטן).");
+                    fileInput.value = "";
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    // התוצאה היא מחרוזת ארוכה שמתחילה ב-data:image...
+                    document.getElementById('prof-logo-data').value = reader.result;
+                    
+                    // תצוגה מקדימה
+                    const img = document.getElementById('logo-preview');
+                    img.src = reader.result;
+                    img.classList.remove('d-none');
+                    document.getElementById('no-logo-text').classList.add('d-none');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // --- DATA LOADERS ---
+        async function loadCategories() { const res = await fetch(`${API_URL}/categories`, { headers: {'Authorization':token} }); if(res.ok) { allCategories=await res.json(); renderOptions('p-category', allCategories); renderCategoriesManageList(); }}
+        async function loadSuppliers() { const res = await fetch(`${API_URL}/suppliers`, { headers: {'Authorization':token} }); if(res.ok) { allSuppliers=await res.json(); renderOptions('p-supplier', allSuppliers); renderSuppliersManageList(); }}
+        async function loadProducts() { const res = await fetch(`${API_URL}/products`, { headers: {'Authorization':token} }); allProducts=await res.json(); updateStats(allProducts); renderTable(allProducts); }
+        
+        async function loadProfile() { 
+            const res = await fetch(`${API_URL}/profile`, { headers: {'Authorization':token} }); 
+            if(res.ok) { 
+                const d=await res.json(); 
+                document.getElementById('prof-name').value=d.business_name||''; 
+                document.getElementById('prof-id').value=d.company_id||'';
+                document.getElementById('prof-phone').value=d.phone||'';
+                document.getElementById('prof-address').value=d.address||'';
+                
+                // טעינת הלוגו אם קיים (בין אם זה URL או Base64)
+                if (d.logo_url) {
+                    document.getElementById('prof-logo-data').value = d.logo_url;
+                    document.getElementById('logo-preview').src = d.logo_url;
+                    document.getElementById('logo-preview').classList.remove('d-none');
+                    document.getElementById('no-logo-text').classList.add('d-none');
+                    updateNavbarLogo(d.business_name, d.logo_url);
+                } else {
+                    updateNavbarLogo(d.business_name, null);
+                }
+            }
+        }
+
+        // --- RENDERERS ---
+        function renderOptions(elmId, items) { document.getElementById(elmId).innerHTML = '<option value="">בחר...</option>' + items.map(i=>`<option value="${i.id}">${i.name}</option>`).join(''); }
+        function renderTable(products) {
+            document.getElementById('products-list').innerHTML = products.map(p => {
+                const cat = allCategories.find(c => c.id === p.category_id);
+                const sup = allSuppliers.find(s => s.id === p.supplier_id);
+                return `<tr class="${p.quantity <= p.reorder_level ? 'table-warning' : ''}"><td><strong>${p.name}</strong><br><small class="text-muted">${p.sku}</small></td><td>${cat?`<span class="badge badge-cat">${cat.name}</span>`:''} ${sup?`<span class="badge badge-sup"><i class="fas fa-truck-moving small"></i> ${sup.name}</span>`:''}</td><td>₪${p.sell_price}</td><td>${p.quantity}</td><td><i class="fas fa-pen mx-2" style="cursor:pointer" onclick="openEditModal(${p.id})"></i><i class="fas fa-trash mx-2" style="cursor:pointer" onclick="deleteProduct(${p.id})"></i></td></tr>`;
+            }).join('');
+        }
+        function updateNavbarLogo(name,url) { if(name)document.getElementById('nav-business-name').innerText=name; const img=document.getElementById('nav-logo-img'); if(url){img.src=url;img.classList.remove('d-none');document.getElementById('nav-business-name').innerText="";}else{img.classList.add('d-none');document.getElementById('nav-business-name').innerText="SmartStock";} }
+
+        // --- CHARTS ---
+        function updateStats(products) {
+            document.getElementById('stat-total-items').innerText = products.length;
+            document.getElementById('stat-total-value').innerText = "₪" + products.reduce((s, p) => s + (p.quantity * p.sell_price), 0).toLocaleString();
+            document.getElementById('stat-low-stock').innerText = products.filter(p => p.quantity <= p.reorder_level).length;
+            
+            const catCounts = {}, supCounts = {}, catValues = {};
+            products.forEach(p => {
+                const cName = allCategories.find(c => c.id === p.category_id)?.name || 'אחר';
+                const sName = allSuppliers.find(s => s.id === p.supplier_id)?.name || 'אחר';
+                catCounts[cName] = (catCounts[cName]||0) + p.quantity;
+                supCounts[sName] = (supCounts[sName]||0) + p.quantity;
+                catValues[cName] = (catValues[cName]||0) + (p.quantity * p.sell_price);
+            });
+            const colors = ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'];
+            drawChart('chartCategories', 'doughnut', Object.keys(catCounts), Object.values(catCounts), 'cat', colors);
+            drawChart('chartSuppliers', 'bar', Object.keys(supCounts).slice(0,5), Object.values(supCounts).slice(0,5), 'sup', ['#198754']);
+            drawChart('chartValue', 'bar', Object.keys(catValues).slice(0,5), Object.values(catValues).slice(0,5), 'val', ['#0dcaf0']);
+        }
+        function drawChart(canvasId, type, labels, data, chartKey, bgColors) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (charts[chartKey]) charts[chartKey].destroy();
+            charts[chartKey] = new Chart(ctx, { type: type, data: { labels, datasets: [{ data, backgroundColor: bgColors, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type==='doughnut', position:'bottom' } }, scales: type==='bar'?{y:{beginAtZero:true}}:{} } });
+        }
+
+        // --- SAVING ---
+        async function saveProfile() { 
+            // לוקחים את הלוגו (שהוא עכשיו טקסט ארוך בפורמט Base64) מהשדה הנסתר
+            const logoData = document.getElementById('prof-logo-data').value;
+            const data={
+                business_name:document.getElementById('prof-name').value, 
+                company_id:document.getElementById('prof-id').value, 
+                phone:document.getElementById('prof-phone').value, 
+                address:document.getElementById('prof-address').value, 
+                logo_url: logoData // נשמר באותה עמודה בדאטה בייס
+            }; 
+            await fetch(`${API_URL}/profile`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(data)}); 
+            alert('הפרופיל עודכן בהצלחה!'); 
+            updateNavbarLogo(data.business_name, data.logo_url); 
+        }
+
+        // --- REST OF CRUD ---
+        async function addCategory(){const n=document.getElementById('new-cat-name').value;if(!n)return;await fetch(`${API_URL}/categories`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify({name:n})});document.getElementById('new-cat-name').value='';loadCategories();}
+        async function deleteCategory(id){if(confirm('למחוק?')){await fetch(`${API_URL}/categories/${id}`,{method:'DELETE',headers:{'Authorization':token}});loadCategories();loadProducts();}}
+        function renderCategoriesManageList(){document.getElementById('categories-list-manage').innerHTML=allCategories.map(c=>`<li class="list-group-item d-flex justify-content-between">${c.name}<button class="btn btn-sm text-danger" onclick="deleteCategory(${c.id})"><i class="fas fa-trash"></i></button></li>`).join('');}
+        async function addSupplier(){const n=document.getElementById('new-sup-name').value,p=document.getElementById('new-sup-phone').value;if(!n)return;await fetch(`${API_URL}/suppliers`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify({name:n,phone:p})});document.getElementById('new-sup-name').value='';loadSuppliers();}
+        async function deleteSupplier(id){if(confirm('למחוק?')){await fetch(`${API_URL}/suppliers/${id}`,{method:'DELETE',headers:{'Authorization':token}});loadSuppliers();loadProducts();}}
+        function renderSuppliersManageList(){document.getElementById('suppliers-list-manage').innerHTML=allSuppliers.map(s=>`<li class="list-group-item d-flex justify-content-between">${s.name}<button class="btn btn-sm text-danger" onclick="deleteSupplier(${s.id})"><i class="fas fa-trash"></i></button></li>`).join('');}
+        let pModal;
+        function openAddModal(){document.getElementById('p-id').value='';document.getElementById('p-name').value='';document.getElementById('p-category').value='';document.getElementById('p-supplier').value='';pModal=new bootstrap.Modal(document.getElementById('productModal'));pModal.show();}
+        function openEditModal(id){const p=allProducts.find(x=>x.id==id);document.getElementById('p-id').value=p.id;document.getElementById('p-name').value=p.name;document.getElementById('p-category').value=p.category_id||'';document.getElementById('p-supplier').value=p.supplier_id||'';document.getElementById('p-sku').value=p.sku;document.getElementById('p-qty').value=p.quantity;document.getElementById('p-price').value=p.sell_price;pModal=new bootstrap.Modal(document.getElementById('productModal'));pModal.show();}
+        async function saveProduct(){const id=document.getElementById('p-id').value;const body=JSON.stringify({name:document.getElementById('p-name').value,sku:document.getElementById('p-sku').value,quantity:document.getElementById('p-qty').value,sell_price:document.getElementById('p-price').value,category_id:document.getElementById('p-category').value?parseInt(document.getElementById('p-category').value):null,supplier_id:document.getElementById('p-supplier').value?parseInt(document.getElementById('p-supplier').value):null});await fetch(`${API_URL}/products${id?'/'+id:''}`,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json','Authorization':token},body});pModal.hide();loadProducts();}
+        async function deleteProduct(id){if(confirm('למחוק?')){await fetch(`${API_URL}/products/${id}`,{method:'DELETE',headers:{'Authorization':token}});loadProducts();}}
+        function openCategoriesModal(){new bootstrap.Modal(document.getElementById('categoriesModal')).show();}
+        function openSuppliersModal(){new bootstrap.Modal(document.getElementById('suppliersModal')).show();}
+        function filterProducts(){renderTable(allProducts.filter(p=>p.name.includes(document.getElementById('searchInput').value)));}
+    </script>
+</body>
+</html>
+"""
+
+# --- Routes (ללא שינוי) ---
+@app.route('/')
+def home(): return render_template_string(HTML_TEMPLATE)
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.json
+    try:
+        auth = supabase.auth.sign_up({ "email": data['email'], "password": data['password'] })
+        if auth.user:
+            supabase.table("profiles").insert({ "id": auth.user.id, "username": data['email'].split('@')[0], "business_name": data['business_name'] }).execute()
+            return jsonify({"message": "OK"}), 201
+        return jsonify({"error": "Failed"}), 400
+    except Exception as e: return jsonify({"error": str(e)}), 400
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    try:
+        auth = supabase.auth.sign_in_with_password({ "email": data['email'], "password": data['password'] })
+        if auth.session: return jsonify({"access_token": auth.session.access_token}), 200
+        return jsonify({"error": "Login failed"}), 401
+    except Exception as e: return jsonify({"error": str(e)}), 400
+@app.route('/profile', methods=['GET', 'PUT'])
+def handle_profile():
+    token = request.headers.get('Authorization')
+    if not token: return jsonify({"error": "No token"}), 401
+    try:
+        user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
+        if request.method == 'GET': return jsonify(supabase.table("profiles").select("*").eq("id", user_id).single().execute().data), 200
+        if request.method == 'PUT': supabase.table("profiles").update(request.json).eq("id", user_id).execute(); return jsonify({"msg": "Updated"}), 200
+    except Exception as e: return jsonify({"error": str(e)}), 400
+@app.route('/suppliers', methods=['GET', 'POST'])
+def handle_suppliers():
+    token = request.headers.get('Authorization')
+    if not token: return jsonify({"error": "No token"}), 401
+    try:
+        user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
+        if request.method == 'POST':
+            data = request.json
+            data['user_id'] = user_id
+            supabase.table("suppliers").insert(data).execute()
+            return jsonify({"msg": "Supplier added"}), 201
+        else: return jsonify(supabase.table("suppliers").select("*").eq("user_id", user_id).execute().data), 200
+    except Exception as e: return jsonify({"error": str(e)}), 400
+@app.route('/suppliers/<int:id>', methods=['DELETE'])
+def delete_supplier(id):
+    token = request.headers.get('Authorization')
+    if not token: return jsonify({"error": "No token"}), 401
+    try:
+        user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
+        supabase.table("suppliers").delete().eq("id", id).eq("user_id", user_id).execute(); return jsonify({"msg": "Deleted"}), 200
+    except Exception as e: return jsonify({"error": str(e)}), 400
+@app.route('/categories', methods=['GET', 'POST'])
+def handle_categories():
+    token = request.headers.get('Authorization')
+    if not token: return jsonify({"error": "No token"}), 401
+    try:
+        user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
+        if request.method == 'POST':
+            data = request.json
+            data['user_id'] = user_id
+            supabase.table("categories").insert(data).execute()
+            return jsonify({"msg": "Category added"}), 201
+        else: return jsonify(supabase.table("categories").select("*").eq("user_id", user_id).execute().data), 200
+    except Exception as e: return jsonify({"error": str(e)}), 400
+@app.route('/categories/<int:id>', methods=['DELETE'])
+def delete_category(id):
+    token = request.headers.get('Authorization')
+    if not token: return jsonify({"error": "No token"}), 401
+    try:
+        user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
+        supabase.table("categories").delete().eq("id", id).eq("user_id", user_id).execute(); return jsonify({"msg": "Deleted"}), 200
+    except Exception as e: return jsonify({"error": str(e)}), 400
+@app.route('/products', methods=['GET', 'POST'])
+def handle_products():
+    token = request.headers.get('Authorization')
+    if not token: return jsonify({"error": "No token"}), 401
+    try:
+        user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
+        if request.method == 'POST':
+            data = request.json
+            data['user_id'] = user_id
+            supabase.table("products").insert(data).execute()
+            return jsonify({"msg": "Added"}), 201
+        else: return jsonify(supabase.table("products").select("*").eq("user_id", user_id).order('id').execute().data), 200
+    except Exception as e: return jsonify({"error": str(e)}), 400
+@app.route('/products/<int:id>', methods=['PUT', 'DELETE'])
+def handle_single_product(id):
+    token = request.headers.get('Authorization')
+    if not token: return jsonify({"error": "No token"}), 401
+    try:
+        user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
+        if request.method == 'PUT': supabase.table("products").update(request.json).eq("id", id).eq("user_id", user_id).execute()
+        if request.method == 'DELETE': supabase.table("products").delete().eq("id", id).eq("user_id", user_id).execute()
+        return jsonify({"msg": "OK"}), 200
+    except Exception as e: return jsonify({"error": str(e)}), 400
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
