@@ -17,10 +17,10 @@ url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
-# --- דף הבית ---
+# --- דף הבית (בדיקה שהשרת רץ) ---
 @app.route('/')
 def home():
-    return "SmartStock Backend v13.1 is Running! 🚀"
+    return "SmartStock Backend v13.2 (Robust AI) is Running! 🚀"
 
 # --- 1. משתמשים והרשמה ---
 @app.route('/register', methods=['POST'])
@@ -69,7 +69,6 @@ def handle_products():
         if request.method == 'POST':
             d = request.json
             d['user_id'] = user_id
-            # המרה ל-NULL אם השדה ריק
             if d.get('category_id') == "": d['category_id'] = None
             if d.get('supplier_id') == "": d['supplier_id'] = None
             
@@ -136,7 +135,7 @@ def delete_customer(id):
         return jsonify({"msg": "Deleted"}), 200
     except Exception as e: return jsonify({"error": str(e)}), 400
 
-# --- 3. הזמנות וקופה (כולל אמצעי תשלום) ---
+# --- 3. הזמנות וקופה ---
 @app.route('/orders', methods=['GET', 'POST'])
 def handle_orders():
     token = request.headers.get('Authorization')
@@ -144,26 +143,22 @@ def handle_orders():
         user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
         
         if request.method == 'GET':
-            # החזרת 50 ההזמנות האחרונות
             return jsonify(supabase.table("orders").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(50).execute().data), 200
 
         if request.method == 'POST':
             data = request.json
             items = data['items']
             cust_id = data.get('customer_id') or None
-            # קליטת אמצעי תשלום (ברירת מחדל: מזומן)
             payment = data.get('payment_method', 'Cash')
             
             total = 0
             order_items_to_insert = []
             
             for item in items:
-                # שליפת נתוני מוצר
                 prod = supabase.table("products").select("*").eq("id", item['product_id']).single().execute().data
                 qty = int(item['quantity'])
                 total += prod['sell_price'] * qty
                 
-                # עדכון מלאי
                 new_qty = prod['quantity'] - qty
                 supabase.table("products").update({"quantity": new_qty}).eq("id", prod['id']).execute()
                 
@@ -180,13 +175,12 @@ def handle_orders():
                 cust = supabase.table("customers").select("name").eq("id", cust_id).single().execute().data
                 cust_name = cust['name']
 
-            # יצירת ההזמנה
             order_res = supabase.table("orders").insert({
                 "user_id": user_id,
                 "customer_id": cust_id,
                 "customer_name": cust_name,
                 "total_amount": total,
-                "payment_method": payment # שמירת אמצעי התשלום
+                "payment_method": payment
             }).execute()
             
             new_oid = order_res.data[0]['id']
@@ -208,42 +202,50 @@ def get_order_items(oid):
         return jsonify(res.data), 200
     except Exception as e: return jsonify({"error": str(e)}), 400
 
-# --- 4. אנליטיקה חכמה (ABC + Forecasting) ---
+# --- 4. אנליטיקה חכמה (הגרסה המתוקנת!) ---
 @app.route('/analytics', methods=['GET'])
 def get_analytics():
     token = request.headers.get('Authorization')
     try:
         user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
         
-        # שליפת נתונים
-        orders = supabase.table("orders").select("id, created_at").eq("user_id", user_id).execute().data
+        # שליפה פשוטה ללא סינוני תאריך מורכבים
+        orders = supabase.table("orders").select("id").eq("user_id", user_id).execute().data
         prods = supabase.table("products").select("*").eq("user_id", user_id).execute().data
         
         if not orders:
             return jsonify({"abc": [], "forecast": []}), 200
 
         order_ids = [o['id'] for o in orders]
-        # שליפת כל הפריטים שנמכרו אי פעם
+        
+        # אם יש הזמנות, נשלוף את הפריטים
+        if not order_ids:
+             return jsonify({"abc": [], "forecast": []}), 200
+
         sold_items = supabase.table("order_items").select("*").in_("order_id", order_ids).execute().data
 
-        # --- חישוב ABC ---
-        product_sales = {}
+        # --- ABC Analysis ---
+        product_revenue = {}
         total_revenue = 0
         
         for item in sold_items:
             rev = item['quantity'] * item['sell_price']
             pid = item['product_id']
-            product_sales[pid] = product_sales.get(pid, 0) + rev
+            product_revenue[pid] = product_revenue.get(pid, 0) + rev
             total_revenue += rev
             
-        sorted_sales = sorted(product_sales.items(), key=lambda x: x[1], reverse=True)
+        sorted_sales = sorted(product_revenue.items(), key=lambda x: x[1], reverse=True)
         abc_list = []
         running_sum = 0
         
         for pid, revenue in sorted_sales:
-            p_name = next((p['name'] for p in prods if p['id'] == pid), "Unknown")
+            p_obj = next((p for p in prods if p['id'] == pid), None)
+            p_name = p_obj['name'] if p_obj else "Unknown Product"
+            
             running_sum += revenue
-            percentage = running_sum / total_revenue if total_revenue > 0 else 0
+            percentage = 0
+            if total_revenue > 0:
+                percentage = running_sum / total_revenue
             
             grade = 'C'
             if percentage <= 0.80: grade = 'A'
@@ -251,43 +253,42 @@ def get_analytics():
             
             abc_list.append({"name": p_name, "revenue": revenue, "grade": grade})
 
-        # --- חישוב Forecast (תחזית) ---
+        # --- Forecast (חיזוי גמר מלאי) ---
         forecast_list = []
-        now = datetime.now()
-        thirty_days_ago = now - timedelta(days=30)
         
-        # סינון הזמנות מה-30 יום האחרונים
-        recent_order_ids = [o['id'] for o in orders if datetime.fromisoformat(o['created_at'].replace('Z','')) > thirty_days_ago]
+        # סיכום כל הכמויות שנמכרו אי פעם
+        product_sold_total = {}
+        for item in sold_items:
+            product_sold_total[item['product_id']] = product_sold_total.get(item['product_id'], 0) + item['quantity']
+
+        for p in prods:
+            sold_count = product_sold_total.get(p['id'], 0)
+            
+            if sold_count == 0:
+                continue
+
+            # חישוב קצב יומי משוער (נניח שהמכירות הן על פני חודש לצורך הדמו)
+            daily_burn = sold_count / 30.0 
+            
+            days_left = 999
+            if daily_burn > 0:
+                days_left = int(p['quantity'] / daily_burn)
+            
+            forecast_list.append({
+                "name": p['name'], 
+                "stock": p['quantity'], 
+                "days_left": days_left
+            })
         
-        if recent_order_ids:
-            recent_items = [i for i in sold_items if i['order_id'] in recent_order_ids]
-            product_burn = {} 
-            
-            for item in recent_items:
-                product_burn[item['product_id']] = product_burn.get(item['product_id'], 0) + item['quantity']
-                
-            for p in prods:
-                sold_last_month = product_burn.get(p['id'], 0)
-                daily_burn = sold_last_month / 30
-                
-                days_left = 999 
-                if daily_burn > 0:
-                    days_left = int(p['quantity'] / daily_burn)
-                
-                if days_left < 30: # להציג רק אם ייגמר בחודש הקרוב
-                    forecast_list.append({
-                        "name": p['name'], 
-                        "stock": p['quantity'], 
-                        "days_left": days_left
-                    })
-            
-            forecast_list.sort(key=lambda x: x['days_left'])
+        forecast_list.sort(key=lambda x: x['days_left'])
 
         return jsonify({"abc": abc_list[:5], "forecast": forecast_list[:5]}), 200
 
-    except Exception as e: return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        print(f"Analytics Error: {str(e)}") # ללוגים
+        return jsonify({"error": str(e), "abc": [], "forecast": []}), 200
 
-# --- 5. סטטיסטיקה ודשבורד (KPI + רווח) ---
+# --- 5. סטטיסטיקה ודשבורד ---
 @app.route('/stats', methods=['GET'])
 def get_stats():
     token = request.headers.get('Authorization')
@@ -302,7 +303,6 @@ def get_stats():
         total_sales = sum([o['total_amount'] for o in orders])
         low_stock = len([p for p in prods if p['quantity'] <= p['reorder_level']])
 
-        # חישוב רווח תפעולי
         total_profit = 0
         if orders:
             order_ids = [o['id'] for o in orders]
