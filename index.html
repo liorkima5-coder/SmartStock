@@ -138,4 +138,501 @@
             <div id="tab-dashboard">
                 <div class="row g-3 mb-4">
                     <div class="col-6 col-md-3"><div class="stat-card border-start border-4 border-primary"><div class="text-muted small fw-bold">מכירות היום</div><h3 class="fw-bold m-0 mt-1 text-primary" id="kpi-sales">₪0</h3></div></div>
-                    <div class="col-6 col-md-3"><div class="stat-card border-start border-4 border-success"><div class="text-muted
+                    <div class="col-6 col-md-3"><div class="stat-card border-start border-4 border-success"><div class="text-muted small fw-bold">רווח תפעולי</div><h3 class="fw-bold m-0 mt-1 text-success" id="kpi-profit">₪0</h3></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card border-start border-4 border-info"><div class="text-muted small fw-bold">שווי מלאי</div><h3 class="fw-bold m-0 mt-1 text-info" id="kpi-stock-val">₪0</h3></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card border-start border-4 border-warning"><div class="text-muted small fw-bold">מלאי נמוך</div><h3 class="fw-bold m-0 mt-1 text-danger" id="kpi-low-stock">0</h3></div></div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-8">
+                        <div class="stat-card">
+                            <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar text-primary"></i> מכירות לפי קטגוריה</h6>
+                            <div class="chart-container"><canvas id="chartCategories"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="stat-card">
+                            <h6 class="fw-bold mb-3"><i class="fas fa-chart-pie text-success"></i> התפלגות ספקים</h6>
+                            <div class="chart-container"><canvas id="chartSuppliers"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold m-0"><i class="fas fa-cash-register"></i> קופה וניהול מוצרים</h5>
+                        <div class="d-none d-md-block">
+                            <button class="btn btn-outline-secondary" onclick="openCategoriesModal()">ניהול קטגוריות</button>
+                            <button class="btn btn-primary px-4" onclick="openProdModal()">+ מוצר חדש</button>
+                        </div>
+                        <div class="d-md-none"><button class="btn btn-primary btn-sm" onclick="openProdModal()">+ חדש</button></div>
+                    </div>
+
+                    <div class="input-group mb-3 shadow-sm">
+                        <span class="input-group-text bg-white border-end-0" onclick="startScanner()" style="cursor:pointer"><i class="fas fa-barcode text-dark fs-5"></i></span>
+                        <input type="text" id="search" class="form-control border-start-0 py-2" placeholder="סרוק ברקוד או חפש שם מוצר..." onkeyup="filterProds()">
+                    </div>
+
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light"><tr><th>שם מוצר</th><th>קטגוריה</th><th>מחיר</th><th>מלאי</th><th>פעולות</th></tr></thead>
+                            <tbody id="prod-table-desktop"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="row g-3 d-md-none" id="prod-grid-mobile"></div>
+                </div>
+            </div>
+
+            <div id="tab-analytics" class="d-none">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="stat-card h-100">
+                            <h5 class="fw-bold mb-3">📊 ניתוח ABC (פארטו)</h5>
+                            <p class="small text-muted mb-3">דירוג המוצרים לפי תרומה להכנסות העסק (A=הכי רווחיים)</p>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead class="table-light"><tr><th>מוצר</th><th>הכנסות</th><th>דירוג</th></tr></thead>
+                                    <tbody id="abc-list"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-card h-100 border-top border-4 border-danger">
+                            <h5 class="fw-bold mb-3 text-danger"><i class="fas fa-stopwatch"></i> תחזית גמר מלאי</h5>
+                            <p class="small text-muted mb-3">ה-AI מזהה מוצרים שייגמרו בקרוב לפי קצב המכירות הנוכחי</p>
+                            <ul class="list-group list-group-flush" id="forecast-list"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-customers" class="d-none">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold">👥 מאגר לקוחות</h5>
+                        <button class="btn btn-success" onclick="openCustModal()"><i class="fas fa-user-plus"></i> לקוח חדש</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light"><tr><th>שם</th><th>טלפון</th><th>עסק</th><th>פעולות</th></tr></thead>
+                            <tbody id="cust-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-orders" class="d-none">
+                <div class="stat-card">
+                    <h5 class="fw-bold mb-4">📜 היסטוריית הזמנות</h5>
+                    <div class="list-group list-group-flush" id="order-list"></div>
+                </div>
+            </div>
+            
+            <div id="tab-profile" class="d-none">
+                <div class="stat-card mx-auto" style="max-width:600px">
+                    <h5 class="fw-bold mb-4">הגדרות עסק</h5>
+                    <div class="mb-3"><label>שם העסק</label><input type="text" id="prof-name" class="form-control"></div>
+                    <button class="btn btn-primary w-100" onclick="saveProfile()">שמור שינויים</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="cart-bar">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div>
+                    <div class="fw-bold fs-5" id="cart-total">₪0</div>
+                    <div class="small opacity-75" id="cart-count">0 פריטים</div>
+                </div>
+            </div>
+            <button class="btn btn-light text-dark fw-bold px-4 rounded-pill shadow-sm" onclick="openCheckout()">לקופה <i class="fas fa-chevron-left ms-1"></i></button>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-icon active" onclick="switchTab('dashboard')" id="btn-dashboard"><i class="fas fa-home"></i>בית</div>
+            <div class="nav-icon" onclick="switchTab('analytics')" id="btn-analytics"><i class="fas fa-chart-line"></i>דוחות</div>
+            <div class="nav-icon" onclick="switchTab('orders')" id="btn-orders"><i class="fas fa-receipt"></i>הזמנות</div>
+            <div class="nav-icon" onclick="switchTab('customers')" id="btn-customers"><i class="fas fa-users"></i>לקוחות</div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="scannerModal"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">סרוק ברקוד</h5><button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopScanner()"></button></div><div class="modal-body p-0"><div id="reader" style="width: 100%;"></div></div></div></div></div>
+
+    <div class="modal fade" id="checkoutModal"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header bg-primary text-white"><h5 class="modal-title">סגירת חשבון</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">
+        <div class="mb-3">
+            <label class="form-label text-muted small fw-bold">בחר לקוח</label>
+            <div class="input-group">
+                <select id="co-cust" class="form-select"></select>
+                <button class="btn btn-outline-secondary" onclick="openCustModal()">+ חדש</button>
+            </div>
+        </div>
+        <div class="mb-4">
+            <label class="form-label text-muted small fw-bold">אמצעי תשלום</label>
+            <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="payment" id="pay-cash" value="מזומן" checked><label class="btn btn-outline-primary" for="pay-cash"><i class="fas fa-money-bill"></i> מזומן</label>
+                <input type="radio" class="btn-check" name="payment" id="pay-card" value="אשראי"><label class="btn btn-outline-primary" for="pay-card"><i class="fas fa-credit-card"></i> אשראי</label>
+                <input type="radio" class="btn-check" name="payment" id="pay-bit" value="Bit"><label class="btn btn-outline-primary" for="pay-bit"><i class="fab fa-btc"></i> Bit</label>
+            </div>
+        </div>
+        <div class="card bg-light border-0 mb-3"><div class="card-body p-2"><ul class="list-group list-group-flush bg-transparent small" id="co-items"></ul></div></div>
+        <div class="d-flex justify-content-between h4 fw-bold mt-3"><span>סה"כ לתשלום:</span><span id="co-total" class="text-primary"></span></div>
+        <button class="btn btn-success w-100 py-3 mt-3 fw-bold rounded-3 shadow-sm" onclick="submitOrder()">✅ בצע הזמנה</button>
+    </div></div></div></div>
+
+    <div class="modal fade" id="receiptModal"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body text-center py-5">
+        <div class="text-success mb-3" style="font-size: 4rem;"><i class="fas fa-check-circle"></i></div>
+        <h3 class="fw-bold">הזמנה בוצעה בהצלחה!</h3>
+        <p class="text-muted mb-4">מספר הזמנה: <span id="rec-oid" class="fw-bold text-dark"></span></p>
+        <button class="btn btn-success w-100 mb-2 py-2 fw-bold" onclick="shareWhatsApp()"><i class="fab fa-whatsapp me-2"></i> שלח קבלה ללקוח</button>
+        <button class="btn btn-outline-secondary w-100 py-2" data-bs-dismiss="modal">סגור</button>
+    </div></div></div></div>
+
+    <div class="modal fade" id="prodModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">מוצר חדש</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+        <input type="text" id="p-name" class="form-control mb-3" placeholder="שם המוצר">
+        <div class="input-group mb-3">
+             <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+             <input type="text" id="p-sku" class="form-control" placeholder="מק״ט / ברקוד">
+        </div>
+        <div class="row g-2 mb-3">
+            <div class="col"><div class="form-floating"><input type="number" id="p-price" class="form-control" placeholder="Price"><label>מכירה</label></div></div>
+            <div class="col"><div class="form-floating"><input type="number" id="p-cost" class="form-control" placeholder="Cost"><label>עלות</label></div></div>
+        </div>
+        <div class="form-floating mb-3"><input type="number" id="p-qty" class="form-control" placeholder="Qty"><label>כמות במלאי</label></div>
+        <div class="row g-2">
+            <div class="col"><select id="p-cat" class="form-select"></select></div>
+            <div class="col"><select id="p-sup" class="form-select"></select></div>
+        </div>
+        <button class="btn btn-primary w-100 mt-4 py-2 fw-bold" onclick="saveProd()">שמור מוצר</button>
+    </div></div></div></div>
+
+    <div class="modal fade" id="custModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">לקוח חדש</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+        <input type="text" id="c-name" class="form-control mb-3" placeholder="שם מלא">
+        <input type="tel" id="c-phone" class="form-control mb-3" placeholder="טלפון">
+        <input type="text" id="c-biz" class="form-control mb-3" placeholder="שם עסק (אופציונלי)">
+        <button class="btn btn-success w-100 fw-bold" onclick="saveCust()">שמור לקוח</button>
+    </div></div></div></div>
+    
+    <div class="modal fade" id="catModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">קטגוריות</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="input-group mb-3"><input type="text" id="new-cat" class="form-control"><button class="btn btn-primary" onclick="addCat()">+</button></div><ul id="cat-list-manage" class="list-group list-group-flush"></ul></div></div></div></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --------------- CONFIG ---------------
+        const API = "https://smartstock-mag6.onrender.com"; // וודא שהכתובת נכונה!
+        // --------------------------------------
+
+        let token = localStorage.getItem('token'), prods=[], custs=[], cats=[], sups=[], cart={}, lastOrder={}, charts={};
+        let html5QrcodeScanner;
+
+        if(token) init();
+        
+        function toggleAuth(type) {
+            document.getElementById('form-login').classList.toggle('d-none', type!=='login');
+            document.getElementById('form-register').classList.toggle('d-none', type!=='register');
+            document.querySelectorAll('.nav-pills .nav-link').forEach(l => l.classList.toggle('active'));
+        }
+
+        async function login() {
+            const btn = document.querySelector('#form-login button'); btn.disabled=true; btn.innerHTML='מתחבר...';
+            const res = await fetch(`${API}/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:document.getElementById('l-email').value,password:document.getElementById('l-pass').value})});
+            const d = await res.json();
+            btn.disabled=false; btn.innerHTML='התחבר למערכת';
+            if(res.ok) { localStorage.setItem('token', d.access_token); token=d.access_token; init(); }
+            else document.getElementById('auth-msg').innerText = d.error;
+        }
+
+        async function register() {
+            const res = await fetch(`${API}/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:document.getElementById('r-email').value,password:document.getElementById('r-pass').value, business_name:document.getElementById('r-name').value})});
+            if(res.ok) { alert('נרשמת בהצלחה! התחבר כעת.'); toggleAuth('login'); }
+            else document.getElementById('auth-msg').innerText = "שגיאה בהרשמה";
+        }
+
+        async function init() {
+            document.getElementById('auth-section').classList.add('d-none');
+            document.getElementById('app-section').classList.remove('d-none');
+            await loadData();
+        }
+
+        async function loadData() {
+            const headers = {'Authorization':token};
+            const [pRes, cRes, sRes, catRes, supRes] = await Promise.all([
+                fetch(`${API}/products`, {headers}), fetch(`${API}/customers`, {headers}), fetch(`${API}/stats`, {headers}),
+                fetch(`${API}/categories`, {headers}), fetch(`${API}/suppliers`, {headers})
+            ]);
+            
+            prods = await pRes.json(); custs = await cRes.json(); const stats = await sRes.json();
+            cats = await catRes.json(); sups = await supRes.json();
+            
+            // Update KPI
+            document.getElementById('kpi-sales').innerText = "₪" + stats.total_sales.toLocaleString();
+            document.getElementById('kpi-profit').innerText = "₪" + stats.total_profit.toLocaleString();
+            document.getElementById('kpi-stock-val').innerText = "₪" + stats.total_value.toLocaleString();
+            document.getElementById('kpi-low-stock').innerText = stats.low_stock;
+            
+            renderProds(prods);
+            renderCharts(prods);
+            fillSelects();
+        }
+
+        function renderProds(list) {
+            // Desktop Table
+            document.getElementById('prod-table-desktop').innerHTML = list.map(p => `
+                <tr>
+                    <td><div class="fw-bold">${p.name}</div><div class="small text-muted">${p.sku||'-'}</div></td>
+                    <td><span class="badge bg-light text-dark border">${cats.find(c=>c.id==p.category_id)?.name||'-'}</span></td>
+                    <td class="fw-bold text-primary">₪${p.sell_price}</td>
+                    <td>${p.quantity}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="addCart(${p.id})">+ הוסף</button>
+                        <i class="fas fa-pen text-muted ms-2" style="cursor:pointer" onclick="editProd(${p.id})"></i>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Mobile Grid
+            document.getElementById('prod-grid-mobile').innerHTML = list.map(p => `
+                <div class="col-12">
+                    <div class="stat-card p-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold text-dark">${p.name}</div>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="badge bg-light text-dark border">${cats.find(c=>c.id==p.category_id)?.name||'-'}</span>
+                                <span class="small text-muted">מלאי: ${p.quantity}</span>
+                            </div>
+                            <div class="text-primary fw-bold mt-1">₪${p.sell_price}</div>
+                        </div>
+                        <button class="btn btn-primary rounded-circle shadow-sm" style="width:45px;height:45px" onclick="addCart(${p.id})"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderCharts(products) {
+            // Categories Chart
+            const catCounts = {};
+            products.forEach(p => { const c = cats.find(x=>x.id==p.category_id)?.name||'אחר'; catCounts[c]=(catCounts[c]||0)+1; });
+            drawChart('chartCategories', 'bar', Object.keys(catCounts), Object.values(catCounts), '#3b82f6');
+
+            // Suppliers Chart
+            const supCounts = {};
+            products.forEach(p => { const s = sups.find(x=>x.id==p.supplier_id)?.name||'אחר'; supCounts[s]=(supCounts[s]||0)+1; });
+            drawChart('chartSuppliers', 'doughnut', Object.keys(supCounts), Object.values(supCounts), ['#3b82f6','#10b981','#f59e0b','#ef4444']);
+        }
+
+        function drawChart(id, type, labels, data, colors) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if(charts[id]) charts[id].destroy();
+            charts[id] = new Chart(ctx, {
+                type: type,
+                data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type==='doughnut', position:'bottom' } }, scales: type==='bar'?{y:{beginAtZero:true, grid:{display:false}}, x:{grid:{display:false}}}:{} }
+            });
+        }
+
+        function addCart(pid) {
+            const p = prods.find(x=>x.id==pid);
+            if(p.quantity <= (cart[pid]||0)) return alert('אין מספיק מלאי');
+            cart[pid] = (cart[pid]||0)+1;
+            renderCart();
+        }
+
+        function renderCart() {
+            let total=0, count=0;
+            for(let pid in cart) {
+                const p = prods.find(x=>x.id==pid);
+                total += p.sell_price * cart[pid];
+                count += cart[pid];
+            }
+            document.getElementById('cart-total').innerText = "₪" + total.toLocaleString();
+            document.getElementById('cart-count').innerText = `${count} פריטים`;
+            document.getElementById('cart-bar').classList.toggle('visible', count>0);
+        }
+
+        function openCheckout() {
+            const list = document.getElementById('co-items');
+            list.innerHTML = '';
+            let total=0;
+            for(let pid in cart) {
+                const p = prods.find(x=>x.id==pid);
+                const sub = p.sell_price * cart[pid];
+                total += sub;
+                list.innerHTML += `<li class="list-group-item d-flex justify-content-between bg-transparent"><span>${p.name} x${cart[pid]}</span><span>₪${sub}</span></li>`;
+            }
+            document.getElementById('co-total').innerText = "₪" + total.toLocaleString();
+            const sel = document.getElementById('co-cust');
+            sel.innerHTML = '<option value="">ללא שיוך (מזדמן)</option>' + custs.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+            new bootstrap.Modal(document.getElementById('checkoutModal')).show();
+        }
+
+        async function submitOrder() {
+            const custId = document.getElementById('co-cust').value;
+            const payMethod = document.querySelector('input[name="payment"]:checked').value;
+            const items = Object.keys(cart).map(pid => ({product_id: pid, quantity: cart[pid]}));
+            
+            const res = await fetch(`${API}/orders`, {
+                method:'POST',
+                headers:{'Content-Type':'application/json','Authorization':token},
+                body:JSON.stringify({customer_id: custId, items: items, payment_method: payMethod})
+            });
+
+            if(res.ok) {
+                const d = await res.json();
+                lastOrder = { id: d.order_id, total: document.getElementById('co-total').innerText };
+                cart={}; renderCart();
+                bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
+                loadData(); // Refresh stock
+                document.getElementById('rec-oid').innerText = d.order_id;
+                new bootstrap.Modal(document.getElementById('receiptModal')).show();
+            }
+        }
+
+        // --- SCANNER ---
+        function startScanner() {
+            new bootstrap.Modal(document.getElementById('scannerModal')).show();
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
+                (decodedText) => {
+                    stopScanner();
+                    const p = prods.find(x => x.sku === decodedText);
+                    if(p) { addCart(p.id); alert(`נוסף: ${p.name}`); } else alert('מוצר לא נמצא');
+                    bootstrap.Modal.getInstance(document.getElementById('scannerModal')).hide();
+                }
+            ).catch(err => { alert('המצלמה לא זמינה'); bootstrap.Modal.getInstance(document.getElementById('scannerModal')).hide(); });
+        }
+        function stopScanner() { if(html5QrcodeScanner) html5QrcodeScanner.stop().then(()=>html5QrcodeScanner.clear()); }
+
+        // --- TABS & ANALYTICS ---
+        async function switchTab(t) {
+            ['dashboard','analytics','customers','orders','profile'].forEach(x => {
+                document.getElementById('tab-'+x).classList.toggle('d-none', x!==t);
+                
+                // Desktop Nav Active State
+                const deskLink = document.getElementById('nav-d-'+x);
+                if(deskLink) {
+                     document.querySelectorAll('.desktop-nav-content .nav-link').forEach(l=>l.classList.remove('active'));
+                     if(x===t) deskLink.classList.add('active');
+                }
+
+                // Mobile Nav Active State
+                const mobBtn = document.getElementById('btn-'+x);
+                if(mobBtn) {
+                    document.querySelectorAll('.bottom-nav .nav-icon').forEach(l=>l.classList.remove('active'));
+                    if(x===t) mobBtn.classList.add('active');
+                }
+            });
+
+            if(t==='analytics') loadAnalytics();
+            if(t==='orders') loadOrders();
+            if(t==='customers') renderCusts();
+        }
+
+        async function loadAnalytics() {
+            const res = await fetch(`${API}/analytics`, {headers:{'Authorization':token}});
+            const d = await res.json();
+            
+            document.getElementById('abc-list').innerHTML = d.abc.map(x => 
+                `<tr><td>${x.name}</td><td>₪${x.revenue.toLocaleString()}</td><td><span class="abc-badge-${x.grade}">${x.grade}</span></td></tr>`
+            ).join('');
+
+            document.getElementById('forecast-list').innerHTML = d.forecast.map(x => 
+                `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold">${x.name}</div>
+                        <small class="text-muted">מלאי נוכחי: ${x.stock}</small>
+                    </div>
+                    <div class="text-danger fw-bold text-end">
+                        <div><i class="fas fa-exclamation-triangle"></i> ייגמר ב:</div>
+                        <div>${x.days_left} ימים</div>
+                    </div>
+                </li>`
+            ).join('');
+        }
+
+        async function loadOrders() {
+            const res = await fetch(`${API}/orders`, {headers:{'Authorization':token}});
+            const list = await res.json();
+            document.getElementById('order-list').innerHTML = list.map(o => `
+                <div class="list-group-item p-3">
+                    <div class="d-flex w-100 justify-content-between mb-2">
+                        <h6 class="mb-1 fw-bold">הזמנה #${o.id}</h6>
+                        <small class="text-muted">${new Date(o.created_at).toLocaleDateString()}</small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="small">
+                            <i class="fas fa-user text-secondary me-1"></i> ${o.customer_name || 'לקוח מזדמן'}
+                        </div>
+                        <div class="fw-bold text-primary">₪${o.total_amount} <span class="badge bg-light text-dark border ms-1">${o.payment_method}</span></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderCusts() {
+            document.getElementById('cust-list').innerHTML = custs.map(c => 
+                `<tr><td>${c.name}</td><td><a href="tel:${c.phone}" class="text-decoration-none">${c.phone||'-'}</a></td><td>${c.business_name||'-'}</td><td><button class="btn btn-sm btn-outline-danger" onclick="delCust(${c.id})"><i class="fas fa-trash"></i></button></td></tr>`
+            ).join('');
+        }
+
+        // --- MANAGERS ---
+        function openProdModal(){ new bootstrap.Modal(document.getElementById('prodModal')).show(); }
+        function openCustModal(){ new bootstrap.Modal(document.getElementById('custModal')).show(); }
+        function openCategoriesModal(){ new bootstrap.Modal(document.getElementById('catModal')).show(); renderCatsManage(); }
+        
+        function fillSelects() {
+            const catOpts = '<option value="">בחר קטגוריה...</option>' + cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+            const supOpts = '<option value="">בחר ספק...</option>' + sups.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+            document.getElementById('p-cat').innerHTML = catOpts;
+            document.getElementById('p-sup').innerHTML = supOpts;
+        }
+
+        async function saveProd(){
+             const body={
+                 name: document.getElementById('p-name').value,
+                 sku: document.getElementById('p-sku').value,
+                 sell_price: document.getElementById('p-price').value,
+                 cost_price: document.getElementById('p-cost').value,
+                 quantity: document.getElementById('p-qty').value,
+                 category_id: document.getElementById('p-cat').value,
+                 supplier_id: document.getElementById('p-sup').value
+             };
+             await fetch(`${API}/products`, {method:'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(body)});
+             bootstrap.Modal.getInstance(document.getElementById('prodModal')).hide();
+             loadData();
+        }
+
+        async function saveCust(){
+            const body={ name: document.getElementById('c-name').value, phone: document.getElementById('c-phone').value, business_name: document.getElementById('c-biz').value };
+            await fetch(`${API}/customers`, {method:'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(body)});
+            bootstrap.Modal.getInstance(document.getElementById('custModal')).hide();
+            const res = await fetch(`${API}/customers`, {headers:{'Authorization':token}}); custs = await res.json(); // Refresh customers
+            switchTab('customers');
+        }
+
+        async function saveProfile(){
+            const name = document.getElementById('prof-name').value;
+            await fetch(`${API}/profile`, {method:'PUT',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify({business_name:name})});
+            alert('נשמר!');
+        }
+        
+        async function addCat() {
+            const n = document.getElementById('new-cat').value;
+            await fetch(`${API}/categories`, {method:'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify({name:n})});
+            document.getElementById('new-cat').value='';
+            const r = await fetch(`${API}/categories`, {headers:{'Authorization':token}}); cats = await r.json();
+            renderCatsManage(); fillSelects();
+        }
+        function renderCatsManage() { document.getElementById('cat-list-manage').innerHTML = cats.map(c=>`<li class="list-group-item">${c.name}</li>`).join(''); }
+
+        function filterProds(){ renderProds(prods.filter(p=>p.name.includes(document.getElementById('search').value) || (p.sku && p.sku.includes(document.getElementById('search').value)))); }
+        function shareWhatsApp() { window.open(`https://wa.me/?text=קבלה להזמנה ${lastOrder.id}: סה"כ ${lastOrder.total}`, '_blank'); }
+        function logout(){ localStorage.clear(); location.reload(); }
+        
+        // Populate profile name on load
+        fetch(`${API}/profile`, {headers:{'Authorization':token}}).then(r=>r.json()).then(d=>document.getElementById('prof-name').value=d.business_name);
+
+    </script>
+</body>
+</html>
