@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SmartStock Mobile</title>
+    <title>SmartStock - ניהול עסק חכם</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,376 +12,130 @@
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; }
+        :root { --primary: #2563eb; --bg: #f1f5f9; --sidebar-width: 250px; }
         body { background-color: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif; padding-bottom: 80px; }
         
-        /* Mobile Bottom Nav */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; height: 65px;
-            background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            display: flex; justify-content: space-around; align-items: center;
-            z-index: 1050; padding-bottom: env(safe-area-inset-bottom);
-        }
-        .nav-icon { text-align: center; color: #64748b; font-size: 0.8rem; cursor: pointer; flex: 1; }
-        .nav-icon i { font-size: 1.4rem; display: block; margin-bottom: 2px; }
-        .nav-icon.active { color: var(--primary); font-weight: 600; }
-        
-        /* Desktop Nav - Hidden on mobile */
-        @media (max-width: 768px) { .desktop-nav { display: none !important; } }
-        @media (min-width: 769px) { .bottom-nav { display: none !important; } }
+        /* Navbar Customization */
+        .navbar { background: linear-gradient(135deg, #1e3a8a, #3b82f6); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .nav-link { color: rgba(255,255,255,0.85) !important; font-weight: 500; transition: 0.3s; border-radius: 8px; margin: 0 5px; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.2); color: white !important; font-weight: bold; }
 
         /* Cards & UI */
-        .stat-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border: none; }
-        .btn-floating { position: fixed; bottom: 80px; left: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(37,99,235,0.4); z-index: 1000; }
-        
+        .stat-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); height: 100%; transition: transform 0.2s; border: none; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .chart-container { position: relative; height: 250px; width: 100%; }
+
+        /* Mobile Bottom Nav (Visible only on small screens) */
+        .bottom-nav {
+            display: none; /* Default hidden */
+            position: fixed; bottom: 0; left: 0; right: 0; height: 70px;
+            background: white; box-shadow: 0 -2px 15px rgba(0,0,0,0.1);
+            justify-content: space-around; align-items: center;
+            z-index: 1050; padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-icon { text-align: center; color: #94a3b8; font-size: 0.75rem; cursor: pointer; flex: 1; transition: 0.2s; }
+        .nav-icon i { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+        .nav-icon.active { color: var(--primary); transform: scale(1.1); font-weight: bold; }
+
         /* Cart Bar */
-        #cart-bar { position: fixed; bottom: 65px; left: 0; right: 0; background: #1e293b; color: white; padding: 12px 20px; z-index: 1040; transform: translateY(200%); transition: transform 0.3s; display: flex; justify-content: space-between; align-items: center; border-radius: 16px 16px 0 0; }
+        #cart-bar { 
+            position: fixed; bottom: 0; left: 0; right: 0; 
+            background: #0f172a; color: white; padding: 15px 25px; 
+            z-index: 1040; transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            display: flex; justify-content: space-between; align-items: center; 
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.2);
+        }
         #cart-bar.visible { transform: translateY(0); }
         
-        .abc-badge-A { background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
-        .abc-badge-B { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
-        .abc-badge-C { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        /* Responsive Adjustments */
+        @media (max-width: 991px) { /* Mobile & Tablet */
+            .desktop-nav-content { display: none !important; }
+            .bottom-nav { display: flex; }
+            body { padding-bottom: 90px; } /* Space for bottom nav */
+            #cart-bar { bottom: 70px; border-radius: 15px 15px 0 0; }
+            .chart-container { height: 200px; }
+        }
+        @media (min-width: 992px) { /* Desktop */
+            .mobile-header { display: none !important; }
+        }
+
+        .abc-badge-A { background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; }
+        .abc-badge-B { background: #fef9c3; color: #a16207; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; }
+        .abc-badge-C { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; }
+        .auth-container { max-width: 450px; margin: 80px auto; }
     </style>
 </head>
 <body>
 
-    <div id="auth-section" class="container mt-5">
-        <div class="stat-card mx-auto" style="max-width: 400px;">
-            <h2 class="text-center text-primary fw-bold mb-4"><i class="fas fa-cubes"></i> SmartStock</h2>
-            <ul class="nav nav-tabs nav-fill mb-3">
-                <li class="nav-item"><a class="nav-link active" onclick="toggleAuth('login')" href="#">כניסה</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="toggleAuth('register')" href="#">הרשמה</a></li>
+    <div id="auth-section" class="container auth-container">
+        <div class="stat-card p-5 text-center">
+            <div class="mb-4 text-primary" style="font-size: 3rem;"><i class="fas fa-cubes"></i></div>
+            <h2 class="fw-bold mb-4">SmartStock</h2>
+            
+            <ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-pill">
+                <li class="nav-item"><a class="nav-link rounded-pill active" onclick="toggleAuth('login')" href="#">כניסה</a></li>
+                <li class="nav-item"><a class="nav-link rounded-pill" onclick="toggleAuth('register')" href="#">הרשמה</a></li>
             </ul>
+            
             <div id="form-login">
-                <input type="email" id="l-email" class="form-control mb-3" placeholder="אימייל">
-                <input type="password" id="l-pass" class="form-control mb-3" placeholder="סיסמה">
-                <button class="btn btn-primary w-100 py-2 fw-bold" onclick="login()">התחבר למערכת</button>
+                <div class="form-floating mb-3">
+                    <input type="email" id="l-email" class="form-control" placeholder="name@example.com">
+                    <label>אימייל</label>
+                </div>
+                <div class="form-floating mb-4">
+                    <input type="password" id="l-pass" class="form-control" placeholder="Password">
+                    <label>סיסמה</label>
+                </div>
+                <button class="btn btn-primary w-100 py-3 fw-bold rounded-pill" onclick="login()">התחבר למערכת <i class="fas fa-arrow-left me-2"></i></button>
             </div>
+            
             <div id="form-register" class="d-none">
-                <input type="text" id="r-name" class="form-control mb-3" placeholder="שם העסק">
-                <input type="email" id="r-email" class="form-control mb-3" placeholder="אימייל">
-                <input type="password" id="r-pass" class="form-control mb-3" placeholder="סיסמה">
-                <button class="btn btn-success w-100 py-2 fw-bold" onclick="register()">צור חשבון חדש</button>
+                <div class="form-floating mb-3">
+                    <input type="text" id="r-name" class="form-control" placeholder="Business Name">
+                    <label>שם העסק</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="email" id="r-email" class="form-control" placeholder="name@example.com">
+                    <label>אימייל</label>
+                </div>
+                <div class="form-floating mb-4">
+                    <input type="password" id="r-pass" class="form-control" placeholder="Password">
+                    <label>סיסמה</label>
+                </div>
+                <button class="btn btn-success w-100 py-3 fw-bold rounded-pill" onclick="register()">צור חשבון <i class="fas fa-check me-2"></i></button>
             </div>
-            <p id="auth-msg" class="text-center mt-3"></p>
+            <p id="auth-msg" class="text-center mt-3 fw-bold"></p>
         </div>
     </div>
 
     <div id="app-section" class="d-none">
-        <nav class="navbar navbar-expand navbar-dark bg-primary desktop-nav mb-4">
+        
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top mb-4">
             <div class="container">
-                <a class="navbar-brand fw-bold" href="#"><i class="fas fa-cubes"></i> SmartStock Pro</a>
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link active" onclick="switchTab('dashboard')">דשבורד</a>
-                    <a class="nav-link" onclick="switchTab('analytics')">אנליטיקס (AI)</a>
-                    <a class="nav-link" onclick="switchTab('customers')">לקוחות</a>
-                    <a class="nav-link" onclick="switchTab('orders')">הזמנות</a>
-                    <button class="btn btn-sm btn-light text-primary fw-bold ms-3" onclick="logout()">יציאה</button>
+                <a class="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2" href="#">
+                    <i class="fas fa-cubes"></i> SmartStock
+                </a>
+                
+                <div class="desktop-nav-content d-flex align-items-center">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link active" onclick="switchTab('dashboard')" id="nav-d-dashboard"><i class="fas fa-home"></i> דשבורד</a></li>
+                        <li class="nav-item"><a class="nav-link" onclick="switchTab('analytics')" id="nav-d-analytics"><i class="fas fa-chart-pie"></i> דוחות AI</a></li>
+                        <li class="nav-item"><a class="nav-link" onclick="switchTab('customers')" id="nav-d-customers"><i class="fas fa-users"></i> לקוחות</a></li>
+                        <li class="nav-item"><a class="nav-link" onclick="switchTab('orders')" id="nav-d-orders"><i class="fas fa-receipt"></i> הזמנות</a></li>
+                        <li class="nav-item"><a class="nav-link" onclick="switchTab('profile')" id="nav-d-profile"><i class="fas fa-cog"></i> הגדרות</a></li>
+                    </ul>
+                    <button class="btn btn-light text-primary fw-bold ms-3 rounded-pill px-4" onclick="logout()">יציאה</button>
+                </div>
+
+                <div class="mobile-header d-lg-none ms-auto text-white">
+                    <button class="btn btn-sm text-white" onclick="logout()"><i class="fas fa-sign-out-alt fs-5"></i></button>
                 </div>
             </div>
         </nav>
 
-        <div class="d-md-none bg-primary text-white p-3 mb-3 d-flex justify-content-between align-items-center">
-            <span class="fw-bold h5 m-0" id="mobile-title">דשבורד</span>
-            <i class="fas fa-sign-out-alt" onclick="logout()"></i>
-        </div>
-
         <div class="container">
             
             <div id="tab-dashboard">
-                <div class="row g-2 mb-3">
-                    <div class="col-6"><div class="stat-card p-3"><div class="text-muted small">מכירות היום</div><h4 class="fw-bold m-0" id="kpi-sales">₪0</h4></div></div>
-                    <div class="col-6"><div class="stat-card p-3"><div class="text-muted small">רווח משוער</div><h4 class="fw-bold text-success m-0" id="kpi-profit">₪0</h4></div></div>
-                </div>
-
-                <div class="d-flex gap-2 mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0" onclick="startScanner()"><i class="fas fa-barcode text-dark"></i></span>
-                        <input type="text" id="search" class="form-control border-start-0" placeholder="חיפוש / סריקה..." onkeyup="filterProds()">
-                    </div>
-                    <button class="btn btn-primary" onclick="openProdModal()"><i class="fas fa-plus"></i></button>
-                </div>
-
-                <div id="product-grid" class="row g-3"></div>
-            </div>
-
-            <div id="tab-analytics" class="d-none">
-                <div class="stat-card">
-                    <h5 class="fw-bold mb-3">📊 ניתוח ABC (פארטו)</h5>
-                    <p class="small text-muted">המוצרים שמכניסים הכי הרבה כסף</p>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead><tr><th>מוצר</th><th>הכנסות</th><th>דירוג</th></tr></thead>
-                            <tbody id="abc-list"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="stat-card mt-3 border-danger border-start border-4">
-                    <h5 class="fw-bold mb-3 text-danger">⚠️ תחזית גמר מלאי</h5>
-                    <p class="small text-muted">מתי המלאי ייגמר לפי קצב המכירות?</p>
-                    <ul class="list-group list-group-flush" id="forecast-list"></ul>
-                </div>
-            </div>
-
-            <div id="tab-customers" class="d-none">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5>לקוחות</h5>
-                    <button class="btn btn-sm btn-success" onclick="openCustModal()">+ חדש</button>
-                </div>
-                <div class="list-group" id="cust-list"></div>
-            </div>
-
-            <div id="tab-orders" class="d-none">
-                <h5>היסטוריית הזמנות</h5>
-                <div class="list-group mt-3" id="order-list"></div>
-            </div>
-        </div>
-
-        <div id="cart-bar">
-            <div><span class="fw-bold" id="cart-total">₪0</span> <small id="cart-count">(0 פריטים)</small></div>
-            <button class="btn btn-light btn-sm fw-bold text-dark" onclick="openCheckout()">לקופה <i class="fas fa-chevron-left"></i></button>
-        </div>
-
-        <div class="bottom-nav d-md-none">
-            <div class="nav-icon active" onclick="switchTab('dashboard')" id="btn-dashboard"><i class="fas fa-home"></i>בית</div>
-            <div class="nav-icon" onclick="switchTab('analytics')" id="btn-analytics"><i class="fas fa-chart-pie"></i>דוחות</div>
-            <div class="nav-icon" onclick="switchTab('orders')" id="btn-orders"><i class="fas fa-receipt"></i>הזמנות</div>
-            <div class="nav-icon" onclick="switchTab('customers')" id="btn-customers"><i class="fas fa-users"></i>לקוחות</div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="scannerModal"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">סרוק ברקוד</h5><button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopScanner()"></button></div><div class="modal-body p-0"><div id="reader" style="width: 100%;"></div></div></div></div></div>
-
-    <div class="modal fade" id="checkoutModal"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header bg-primary text-white"><h5 class="modal-title">סגירת חשבון</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">
-        <div class="mb-3">
-            <label class="form-label">לקוח</label>
-            <select id="co-cust" class="form-select"></select>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">אמצעי תשלום</label>
-            <div class="btn-group w-100" role="group">
-                <input type="radio" class="btn-check" name="payment" id="pay-cash" value="מזומן" checked><label class="btn btn-outline-primary" for="pay-cash">💵 מזומן</label>
-                <input type="radio" class="btn-check" name="payment" id="pay-card" value="אשראי"><label class="btn btn-outline-primary" for="pay-card">💳 אשראי</label>
-                <input type="radio" class="btn-check" name="payment" id="pay-bit" value="Bit"><label class="btn btn-outline-primary" for="pay-bit">📱 Bit</label>
-            </div>
-        </div>
-        <ul class="list-group list-group-flush mb-3 small" id="co-items"></ul>
-        <div class="d-flex justify-content-between h4 fw-bold"><span>סה"כ:</span><span id="co-total"></span></div>
-        <button class="btn btn-success w-100 py-2 mt-3 fw-bold" onclick="submitOrder()">✅ אשר הזמנה</button>
-    </div></div></div></div>
-
-    <div class="modal fade" id="receiptModal"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body text-center py-4">
-        <div class="text-success mb-3" style="font-size: 3rem;"><i class="fas fa-check-circle"></i></div>
-        <h4>הזמנה בוצעה!</h4>
-        <p class="text-muted">מספר הזמנה: <span id="rec-oid"></span></p>
-        <button class="btn btn-success w-100 mb-2" onclick="shareWhatsApp()"><i class="fab fa-whatsapp"></i> שלח קבלה ללקוח</button>
-        <button class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">סגור</button>
-    </div></div></div></div>
-
-    <div class="modal fade" id="prodModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-body">
-        <h5 class="mb-3">מוצר חדש</h5>
-        <input type="text" id="p-name" class="form-control mb-2" placeholder="שם המוצר">
-        <input type="text" id="p-sku" class="form-control mb-2" placeholder="ברקוד / מק״ט">
-        <div class="row g-2">
-            <div class="col"><input type="number" id="p-price" class="form-control" placeholder="מחיר מכירה"></div>
-            <div class="col"><input type="number" id="p-cost" class="form-control" placeholder="מחיר עלות"></div>
-        </div>
-        <input type="number" id="p-qty" class="form-control mt-2" placeholder="כמות במלאי">
-        <button class="btn btn-primary w-100 mt-3" onclick="saveProd()">שמור</button>
-    </div></div></div></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const API = "https://smartstock-mag6.onrender.com"; // וודא כתובת!
-        let token = localStorage.getItem('token'), prods=[], custs=[], cart={}, lastOrder={};
-        let html5QrcodeScanner;
-
-        if(token) init();
-        else document.getElementById('auth-section').classList.remove('d-none');
-
-        function toggleAuth(type) {
-            document.getElementById('form-login').classList.toggle('d-none', type!=='login');
-            document.getElementById('form-register').classList.toggle('d-none', type!=='register');
-            document.querySelectorAll('.nav-tabs .nav-link').forEach(l => l.classList.toggle('active'));
-        }
-
-        async function login() {
-            const res = await fetch(`${API}/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:document.getElementById('l-email').value,password:document.getElementById('l-pass').value})});
-            const d = await res.json();
-            if(res.ok) { localStorage.setItem('token', d.access_token); token=d.access_token; init(); }
-            else alert(d.error);
-        }
-
-        async function init() {
-            document.getElementById('auth-section').classList.add('d-none');
-            document.getElementById('app-section').classList.remove('d-none');
-            loadData();
-        }
-
-        async function loadData() {
-            const [pRes, cRes, sRes] = await Promise.all([
-                fetch(`${API}/products`, {headers:{'Authorization':token}}),
-                fetch(`${API}/customers`, {headers:{'Authorization':token}}),
-                fetch(`${API}/stats`, {headers:{'Authorization':token}})
-            ]);
-            prods = await pRes.json();
-            custs = await cRes.json();
-            const stats = await sRes.json();
-            
-            document.getElementById('kpi-sales').innerText = "₪" + stats.total_sales.toLocaleString();
-            document.getElementById('kpi-profit').innerText = "₪" + stats.total_profit.toLocaleString();
-            
-            renderProds(prods);
-        }
-
-        function renderProds(list) {
-            const grid = document.getElementById('product-grid');
-            grid.innerHTML = list.map(p => `
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="stat-card p-3 d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="fw-bold text-dark">${p.name}</div>
-                            <div class="text-muted small">${p.sku || '-'} | מלאי: ${p.quantity}</div>
-                            <div class="text-primary fw-bold mt-1">₪${p.sell_price}</div>
-                        </div>
-                        <button class="btn btn-outline-primary rounded-circle" style="width:40px;height:40px" onclick="addCart(${p.id})"><i class="fas fa-plus"></i></button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function addCart(pid) {
-            const p = prods.find(x=>x.id==pid);
-            if(p.quantity <= (cart[pid]||0)) return alert('אין מספיק מלאי');
-            cart[pid] = (cart[pid]||0)+1;
-            renderCart();
-        }
-
-        function renderCart() {
-            let total=0, count=0;
-            for(let pid in cart) {
-                const p = prods.find(x=>x.id==pid);
-                total += p.sell_price * cart[pid];
-                count += cart[pid];
-            }
-            document.getElementById('cart-total').innerText = "₪" + total.toLocaleString();
-            document.getElementById('cart-count').innerText = `(${count})`;
-            document.getElementById('cart-bar').classList.toggle('visible', count>0);
-        }
-
-        function openCheckout() {
-            const list = document.getElementById('co-items');
-            list.innerHTML = '';
-            let total=0;
-            for(let pid in cart) {
-                const p = prods.find(x=>x.id==pid);
-                const sub = p.sell_price * cart[pid];
-                total += sub;
-                list.innerHTML += `<li class="list-group-item d-flex justify-content-between"><span>${p.name} x${cart[pid]}</span><span>₪${sub}</span></li>`;
-            }
-            document.getElementById('co-total').innerText = "₪" + total.toLocaleString();
-            const sel = document.getElementById('co-cust');
-            sel.innerHTML = '<option value="">ללא שיוך (מזדמן)</option>' + custs.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-            new bootstrap.Modal(document.getElementById('checkoutModal')).show();
-        }
-
-        async function submitOrder() {
-            const custId = document.getElementById('co-cust').value;
-            const payMethod = document.querySelector('input[name="payment"]:checked').value;
-            const items = Object.keys(cart).map(pid => ({product_id: pid, quantity: cart[pid]}));
-            
-            const res = await fetch(`${API}/orders`, {
-                method:'POST',
-                headers:{'Content-Type':'application/json','Authorization':token},
-                body:JSON.stringify({customer_id: custId, items: items, payment_method: payMethod})
-            });
-
-            if(res.ok) {
-                const d = await res.json();
-                lastOrder = { id: d.order_id, total: document.getElementById('co-total').innerText, items: items };
-                cart={}; renderCart();
-                bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
-                loadData();
-                document.getElementById('rec-oid').innerText = d.order_id;
-                new bootstrap.Modal(document.getElementById('receiptModal')).show();
-            }
-        }
-
-        function shareWhatsApp() {
-            let text = `*קבלה עבור הזמנה ${lastOrder.id}* %0A`;
-            text += `סה"כ לתשלום: ${lastOrder.total} %0A------------------%0A`;
-            // בגרסה אמיתית כאן שמים את פירוט המוצרים
-            text += `תודה שקנית אצלנו!`;
-            window.open(`https://wa.me/?text=${text}`, '_blank');
-        }
-
-        // --- SCANNER ---
-        function startScanner() {
-            new bootstrap.Modal(document.getElementById('scannerModal')).show();
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-                (decodedText) => {
-                    stopScanner();
-                    const p = prods.find(x => x.sku === decodedText);
-                    if(p) { addCart(p.id); alert(`נוסף: ${p.name}`); }
-                    else alert('מוצר לא נמצא');
-                    bootstrap.Modal.getInstance(document.getElementById('scannerModal')).hide();
-                }
-            );
-        }
-        function stopScanner() { if(html5QrcodeScanner) html5QrcodeScanner.stop(); }
-
-        // --- ANALYTICS ---
-        async function loadAnalytics() {
-            const res = await fetch(`${API}/analytics`, {headers:{'Authorization':token}});
-            const d = await res.json();
-            
-            document.getElementById('abc-list').innerHTML = d.abc.map(x => 
-                `<tr><td>${x.name}</td><td>₪${x.revenue}</td><td><span class="abc-badge-${x.grade}">${x.grade}</span></td></tr>`
-            ).join('');
-
-            document.getElementById('forecast-list').innerHTML = d.forecast.map(x => 
-                `<li class="list-group-item d-flex justify-content-between text-danger">
-                    <span>${x.name}</span>
-                    <span class="fw-bold">ייגמר ב-${x.days_left} ימים</span>
-                </li>`
-            ).join('');
-        }
-
-        function switchTab(t) {
-            ['dashboard','analytics','customers','orders'].forEach(x => {
-                document.getElementById('tab-'+x).classList.toggle('d-none', x!==t);
-                // עדכון אייקון תחתון
-                const btn = document.getElementById('btn-'+x);
-                if(btn) {
-                    if(x===t) btn.classList.add('active'); else btn.classList.remove('active');
-                }
-            });
-            document.getElementById('mobile-title').innerText = document.getElementById('btn-'+t)?.innerText || 'דשבורד';
-            if(t==='analytics') loadAnalytics();
-            if(t==='orders') loadOrders();
-        }
-
-        async function loadOrders() {
-            const res = await fetch(`${API}/orders`, {headers:{'Authorization':token}});
-            const list = await res.json();
-            document.getElementById('order-list').innerHTML = list.map(o => `
-                <a href="#" class="list-group-item list-group-item-action">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">הזמנה #${o.id}</h6>
-                        <small>${new Date(o.created_at).toLocaleDateString()}</small>
-                    </div>
-                    <p class="mb-1">₪${o.total_amount} <span class="badge bg-secondary">${o.payment_method||'Cash'}</span></p>
-                    <small>${o.customer_name || 'מזדמן'}</small>
-                </a>
-            `).join('');
-        }
-
-        // Utils
-        function openProdModal(){ new bootstrap.Modal(document.getElementById('prodModal')).show(); }
-        async function saveProd(){ /* לוגיקה מקוצרת להוספה */ }
-        function filterProds(){ renderProds(prods.filter(p=>p.name.includes(document.getElementById('search').value) || p.sku.includes(document.getElementById('search').value))); }
-        function logout(){ localStorage.clear(); location.reload(); }
-    </script>
-</body>
-</html>
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3"><div class="stat-card border-start border-4 border-primary"><div class="text-muted small fw-bold">מכירות היום</div><h3 class="fw-bold m-0 mt-1 text-primary" id="kpi-sales">₪0</h3></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card border-start border-4 border-success"><div class="text-muted
