@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartStock - ניהול עסק מתקדם</title>
+    <title>SmartStock - ניהול עסק</title>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2897/2897785.png">
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -17,9 +17,11 @@
         .nav-pills .nav-link { color: rgba(255,255,255,0.8); border-radius: 50px; padding: 8px 20px; margin-left: 10px; font-weight: 500; transition: all 0.3s; }
         .nav-pills .nav-link:hover { background-color: rgba(255,255,255,0.2); color: white; }
         .nav-pills .nav-link.active { background-color: white; color: #0d6efd; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .stat-card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; padding: 20px; height: 100%; transition: transform 0.2s; }
+        .stat-card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; padding: 15px; height: 100%; transition: transform 0.2s; }
         .stat-card:hover { transform: translateY(-3px); }
         .auth-card { max-width: 400px; margin: 60px auto; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        
+        .chart-container { position: relative; height: 200px; width: 100%; }
         
         /* סרגל קופה צף */
         #cart-bar {
@@ -81,11 +83,18 @@
         <div class="container pb-5">
             
             <div id="dashboard-section">
+                <div class="row g-2 mb-4">
+                    <div class="col"><div class="stat-card text-center"><h6 class="text-muted small">מוצרים</h6><h4 class="fw-bold m-0" id="stat-total-items">0</h4></div></div>
+                    <div class="col"><div class="stat-card text-center"><h6 class="text-muted small">שווי מלאי</h6><h4 class="fw-bold text-secondary m-0" id="stat-total-value">₪0</h4></div></div>
+                    <div class="col"><div class="stat-card text-center"><h6 class="text-muted small">מכירות</h6><h4 class="fw-bold text-primary m-0" id="stat-total-sales">₪0</h4></div></div>
+                    <div class="col"><div class="stat-card text-center bg-success-subtle"><h6 class="text-success small fw-bold">רווח תפעולי</h6><h4 class="fw-bold text-success m-0" id="stat-total-profit">₪0</h4></div></div>
+                    <div class="col"><div class="stat-card text-center"><h6 class="text-muted small">מלאי נמוך</h6><h4 class="fw-bold text-danger m-0" id="stat-low-stock">0</h4></div></div>
+                </div>
+
                 <div class="row g-3 mb-4">
-                    <div class="col-md-3"><div class="stat-card d-flex justify-content-between align-items-center"><div><h6 class="text-muted">סה"כ מוצרים</h6><h3 class="fw-bold mb-0" id="stat-total-items">0</h3></div><i class="fas fa-boxes text-primary fs-2"></i></div></div>
-                    <div class="col-md-3"><div class="stat-card d-flex justify-content-between align-items-center"><div><h6 class="text-muted">שווי מלאי (עלות)</h6><h3 class="fw-bold mb-0 text-success" id="stat-total-value">₪0</h3></div><i class="fas fa-coins text-success fs-2"></i></div></div>
-                    <div class="col-md-3"><div class="stat-card d-flex justify-content-between align-items-center"><div><h6 class="text-muted">סה"כ מכירות</h6><h3 class="fw-bold mb-0 text-info" id="stat-total-sales">₪0</h3></div><i class="fas fa-cash-register text-info fs-2"></i></div></div>
-                    <div class="col-md-3"><div class="stat-card d-flex justify-content-between align-items-center"><div><h6 class="text-muted">מלאי נמוך</h6><h3 class="fw-bold mb-0 text-danger" id="stat-low-stock">0</h3></div><i class="fas fa-exclamation-circle text-danger fs-2"></i></div></div>
+                    <div class="col-md-4"><div class="stat-card"><h6 class="fw-bold text-center mb-2">קטגוריות</h6><div class="chart-container"><canvas id="chartCategories"></canvas></div></div></div>
+                    <div class="col-md-4"><div class="stat-card"><h6 class="fw-bold text-center mb-2">ספקים</h6><div class="chart-container"><canvas id="chartSuppliers"></canvas></div></div></div>
+                    <div class="col-md-4"><div class="stat-card"><h6 class="fw-bold text-center mb-2">ערך מלאי</h6><div class="chart-container"><canvas id="chartValue"></canvas></div></div></div>
                 </div>
 
                 <div class="stat-card p-4">
@@ -100,7 +109,7 @@
                     
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
-                            <thead class="table-light"><tr><th>שם</th><th>מחיר עלות</th><th>מחיר מכירה</th><th>מלאי</th><th>פעולות קופה</th><th>ניהול</th></tr></thead>
+                            <thead class="table-light"><tr><th>שם</th><th>עלות</th><th>מכירה</th><th>מלאי</th><th>פעולות קופה</th><th>ניהול</th></tr></thead>
                             <tbody id="products-list"></tbody>
                         </table>
                     </div>
@@ -188,9 +197,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const API_URL = "https://smartstock-mag6.onrender.com"; // הכתובת המעודכנת שלך!
+        // --------------- וודא שהכתובת נכונה ----------------
+        const API_URL = "https://smartstock-mag6.onrender.com"; 
+        // ---------------------------------------------------
+
         let token = localStorage.getItem('token');
-        let allProducts=[], allCategories=[], allCustomers=[], cart={};
+        let allProducts=[], allCategories=[], allSuppliers=[], allCustomers=[], cart={}, charts={cat:null,sup:null,val:null};
 
         if (token) initApp();
 
@@ -203,7 +215,7 @@
 
         async function initApp() {
             document.getElementById('login-section').classList.add('d-none'); document.getElementById('register-section').classList.add('d-none'); document.getElementById('main-app').classList.remove('d-none');
-            await loadProfile(); await loadCategories(); await loadCustomers(); await loadProducts(); await loadOrders();
+            await loadProfile(); await Promise.all([loadCategories(), loadSuppliers(), loadCustomers()]); await loadProducts(); await loadOrders();
         }
 
         function switchTab(t){
@@ -211,7 +223,6 @@
             document.querySelectorAll('.nav-link').forEach(x=>x.classList.remove('active'));
             document.getElementById(t+'-section').classList.remove('d-none');
             document.getElementById('nav-'+t).classList.add('active');
-            // Cart visibility logic
             if(t==='dashboard' && Object.keys(cart).length > 0) document.getElementById('cart-bar').classList.add('visible');
             else document.getElementById('cart-bar').classList.remove('visible');
         }
@@ -252,7 +263,6 @@
                 }
             }
             document.getElementById('checkout-total').innerText = "₪" + total.toLocaleString();
-            // Populate customers select
             const sel = document.getElementById('checkout-customer');
             sel.innerHTML = '<option value="">לקוח מזדמן (ללא שיוך)</option>' + allCustomers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             new bootstrap.Modal(document.getElementById('checkoutModal')).show();
@@ -272,21 +282,52 @@
                 alert('הזמנה בוצעה בהצלחה!');
                 cart = {}; updateCartUI();
                 bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
-                loadProducts(); loadOrders(); loadStats(); // רענון נתונים
+                loadProducts(); loadOrders(); loadStats(); 
             } else { alert('שגיאה בביצוע הזמנה'); }
         }
 
-        // --- DATA LOADERS ---
+        // --- DATA & STATS ---
         async function loadProducts() { const res=await fetch(`${API_URL}/products`,{headers:{'Authorization':token}}); allProducts=await res.json(); renderTable(allProducts); loadStats(); }
         async function loadCustomers() { const res=await fetch(`${API_URL}/customers`,{headers:{'Authorization':token}}); allCustomers=await res.json(); renderCustomers(); }
         async function loadOrders() { const res=await fetch(`${API_URL}/orders`,{headers:{'Authorization':token}}); const orders=await res.json(); renderOrders(orders); }
+        
         async function loadStats() {
             const res = await fetch(`${API_URL}/stats`, { headers: {'Authorization':token} });
             const stats = await res.json();
             document.getElementById('stat-total-items').innerText = stats.total_items;
             document.getElementById('stat-total-value').innerText = "₪" + stats.total_value.toLocaleString();
             document.getElementById('stat-total-sales').innerText = "₪" + stats.total_sales.toLocaleString();
+            document.getElementById('stat-total-profit').innerText = "₪" + stats.total_profit.toLocaleString(); // רווח!
             document.getElementById('stat-low-stock').innerText = stats.low_stock;
+            
+            // עדכון הגרפים
+            updateCharts(allProducts);
+        }
+
+        function updateCharts(products) {
+            const catCounts = {}, supCounts = {}, catValues = {};
+            products.forEach(p => {
+                const cName = allCategories.find(c => c.id === p.category_id)?.name || 'אחר';
+                const sName = allSuppliers.find(s => s.id === p.supplier_id)?.name || 'אחר';
+                catCounts[cName] = (catCounts[cName]||0) + p.quantity;
+                supCounts[sName] = (supCounts[sName]||0) + p.quantity;
+                catValues[cName] = (catValues[cName]||0) + (p.quantity * (p.cost_price || 0));
+            });
+            
+            drawChart('chartCategories', 'doughnut', Object.keys(catCounts), Object.values(catCounts), 'cat');
+            drawChart('chartSuppliers', 'bar', Object.keys(supCounts).slice(0,5), Object.values(supCounts).slice(0,5), 'sup');
+            drawChart('chartValue', 'bar', Object.keys(catValues).slice(0,5), Object.values(catValues).slice(0,5), 'val');
+        }
+
+        function drawChart(id, type, labels, data, key) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if (charts[key]) charts[key].destroy();
+            const colors = ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14', '#ffc107', '#198754'];
+            charts[key] = new Chart(ctx, { 
+                type: type, 
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: type==='bar'?colors[0]:colors }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type==='doughnut', position:'bottom' } } } 
+            });
         }
 
         // --- RENDERERS ---
@@ -296,56 +337,30 @@
                 <td>₪${p.cost_price || 0}</td>
                 <td class="fw-bold text-success">₪${p.sell_price}</td>
                 <td>${p.quantity}</td>
-                <td><button class="btn btn-sm btn-outline-primary" onclick="addToCart(${p.id})"><i class="fas fa-cart-plus"></i> הוסף לסל</button></td>
+                <td><button class="btn btn-sm btn-outline-primary" onclick="addToCart(${p.id})"><i class="fas fa-cart-plus"></i></button></td>
                 <td><i class="fas fa-pen action-btn" onclick="openEditModal(${p.id})"></i><i class="fas fa-trash action-btn" onclick="deleteProduct(${p.id})"></i></td>
             </tr>`).join('');
         }
-
-        function renderCustomers() {
-            document.getElementById('customers-list').innerHTML = allCustomers.map(c => `<tr>
-                <td>${c.name}</td><td>${c.phone||'-'}</td><td>${c.address||'-'}</td><td>${c.business_name||'-'}</td>
-                <td><i class="fas fa-trash text-danger action-btn" onclick="deleteCustomer(${c.id})"></i></td>
-            </tr>`).join('');
-        }
-
-        function renderOrders(orders) {
-            document.getElementById('orders-list').innerHTML = orders.map(o => `<tr>
-                <td>#${o.id}</td>
-                <td>${new Date(o.created_at).toLocaleDateString('he-IL')}</td>
-                <td>${o.customer_name || 'לקוח מזדמן'}</td>
-                <td class="fw-bold">₪${o.total_amount}</td>
-                <td><button class="btn btn-sm btn-info text-white" onclick="showOrderDetails(${o.id})">פרטים</button></td>
-            </tr>`).join('');
-        }
+        function renderCustomers() { document.getElementById('customers-list').innerHTML = allCustomers.map(c => `<tr><td>${c.name}</td><td>${c.phone||'-'}</td><td>${c.address||'-'}</td><td>${c.business_name||'-'}</td><td><i class="fas fa-trash text-danger action-btn" onclick="deleteCustomer(${c.id})"></i></td></tr>`).join(''); }
+        function renderOrders(orders) { document.getElementById('orders-list').innerHTML = orders.map(o => `<tr><td>#${o.id}</td><td>${new Date(o.created_at).toLocaleDateString('he-IL')}</td><td>${o.customer_name || 'לקוח מזדמן'}</td><td class="fw-bold">₪${o.total_amount}</td><td><button class="btn btn-sm btn-info text-white" onclick="showOrderDetails(${o.id})">פרטים</button></td></tr>`).join(''); }
 
         // --- MANAGERS ---
         let custModal;
         function openCustomerModal() { document.getElementById('cust-id').value=''; document.getElementById('cust-name').value=''; custModal=new bootstrap.Modal(document.getElementById('customerModal')); custModal.show(); }
-        async function saveCustomer() {
-            const body = { name: document.getElementById('cust-name').value, phone: document.getElementById('cust-phone').value, address: document.getElementById('cust-addr').value, business_name: document.getElementById('cust-biz').value };
-            await fetch(`${API_URL}/customers`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(body)});
-            custModal.hide(); loadCustomers();
-        }
+        async function saveCustomer() { const body = { name: document.getElementById('cust-name').value, phone: document.getElementById('cust-phone').value, address: document.getElementById('cust-addr').value, business_name: document.getElementById('cust-biz').value }; await fetch(`${API_URL}/customers`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(body)}); custModal.hide(); loadCustomers(); }
         async function deleteCustomer(id) { if(confirm('למחוק לקוח?')) { await fetch(`${API_URL}/customers/${id}`,{method:'DELETE',headers:{'Authorization':token}}); loadCustomers(); } }
+        async function showOrderDetails(oid) { const res = await fetch(`${API_URL}/orders/${oid}/items`, { headers: {'Authorization':token} }); const items = await res.json(); document.getElementById('order-details-items').innerHTML = items.map(i => `<li class="list-group-item d-flex justify-content-between"><span>${i.product_name} (x${i.quantity})</span><span>₪${i.sell_price}</span></li>`).join(''); new bootstrap.Modal(document.getElementById('orderDetailsModal')).show(); }
 
-        async function showOrderDetails(oid) {
-            const res = await fetch(`${API_URL}/orders/${oid}/items`, { headers: {'Authorization':token} });
-            const items = await res.json();
-            document.getElementById('order-details-items').innerHTML = items.map(i => `<li class="list-group-item d-flex justify-content-between">
-                <span>${i.product_name} (x${i.quantity})</span><span>₪${i.sell_price}</span>
-            </li>`).join('');
-            new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
-        }
-
+        // Standard Functions
         async function loadCategories(){const r=await fetch(`${API_URL}/categories`,{headers:{'Authorization':token}});if(r.ok){allCategories=await r.json();renderOptions('p-category',allCategories);renderCatList();}}
+        async function loadSuppliers(){const r=await fetch(`${API_URL}/suppliers`,{headers:{'Authorization':token}});if(r.ok){allSuppliers=await r.json();renderOptions('p-supplier',allSuppliers);}}
         async function loadProfile(){const r=await fetch(`${API_URL}/profile`,{headers:{'Authorization':token}});if(r.ok){const d=await r.json();if(d.logo_url){document.getElementById('nav-logo-img').src=d.logo_url;document.getElementById('nav-logo-img').classList.remove('d-none');document.getElementById('nav-business-name').innerText="";}}}
         function renderOptions(id,list){document.getElementById(id).innerHTML='<option value="">בחר...</option>'+list.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');}
         async function saveProfile(){alert('פרופיל עודכן (חלקית בדמו זה)');}
-        
         let pModal;
         function openAddModal(){document.getElementById('p-id').value='';document.getElementById('p-name').value='';pModal=new bootstrap.Modal(document.getElementById('productModal'));pModal.show();}
         function openEditModal(id){const p=allProducts.find(x=>x.id==id);document.getElementById('p-id').value=p.id;document.getElementById('p-name').value=p.name;document.getElementById('p-qty').value=p.quantity;document.getElementById('p-cost').value=p.cost_price;document.getElementById('p-price').value=p.sell_price;pModal=new bootstrap.Modal(document.getElementById('productModal'));pModal.show();}
-        async function saveProduct(){const id=document.getElementById('p-id').value; const bd={name:document.getElementById('p-name').value,sku:document.getElementById('p-sku').value,quantity:document.getElementById('p-qty').value,cost_price:document.getElementById('p-cost').value,sell_price:document.getElementById('p-price').value,category_id:document.getElementById('p-category').value||null}; await fetch(`${API_URL}/products${id?'/'+id:''}`,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(bd)});pModal.hide();loadProducts();}
+        async function saveProduct(){const id=document.getElementById('p-id').value; const bd={name:document.getElementById('p-name').value,sku:document.getElementById('p-sku').value,quantity:document.getElementById('p-qty').value,cost_price:document.getElementById('p-cost').value,sell_price:document.getElementById('p-price').value,category_id:document.getElementById('p-category').value||null,supplier_id:document.getElementById('p-supplier').value||null}; await fetch(`${API_URL}/products${id?'/'+id:''}`,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(bd)});pModal.hide();loadProducts();}
         async function deleteProduct(id){if(confirm('למחוק?'))await fetch(`${API_URL}/products/${id}`,{method:'DELETE',headers:{'Authorization':token}});loadProducts();}
         function openCategoriesModal(){new bootstrap.Modal(document.getElementById('categoriesModal')).show();}
         async function addCategory(){const n=document.getElementById('new-cat-name').value;if(n)await fetch(`${API_URL}/categories`,{method:'POST',headers:{'Authorization':token,'Content-Type':'application/json'},body:JSON.stringify({name:n})});document.getElementById('new-cat-name').value='';loadCategories();}
