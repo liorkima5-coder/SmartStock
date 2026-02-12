@@ -60,6 +60,54 @@
             background-color: white;
         }
 
+        /* --- Landing Page Styles --- */
+        .hero-section {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            color: white;
+            padding: 100px 0 150px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-bg-circle {
+            position: absolute;
+            width: 600px; height: 600px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 50%;
+            top: -100px; right: -100px;
+        }
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+            height: 100%;
+            border: 1px solid #f1f5f9;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        .feature-icon {
+            width: 60px; height: 60px;
+            background: #eff6ff;
+            color: var(--primary);
+            border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        .contact-section {
+            background: white;
+            padding: 80px 0;
+        }
+        .landing-nav {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            padding: 20px 0;
+            z-index: 10;
+        }
+
         /* Responsive Adjustments */
         @media (max-width: 991px) { /* Mobile & Tablet */
             .desktop-nav-content { display: none !important; }
@@ -84,7 +132,97 @@
 </head>
 <body>
 
-    <div id="auth-section" class="container auth-container">
+    <div id="landing-section">
+        <div class="landing-nav">
+            <div class="container d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2 text-white fw-bold fs-4">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2897/2897785.png" style="width:35px;height:35px;background:white;padding:3px;border-radius:8px;">
+                    SmartStock
+                </div>
+                <button class="btn btn-light text-primary fw-bold rounded-pill px-4" onclick="goToAuth()">כניסה למערכת</button>
+            </div>
+        </div>
+
+        <header class="hero-section text-center text-lg-start">
+            <div class="hero-bg-circle"></div>
+            <div class="container position-relative">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <h1 class="display-3 fw-bold mb-4">ניהול העסק שלך,<br>חכם ופשוט יותר.</h1>
+                        <p class="lead mb-5 text-white-50">מערכת ה-All-in-One לניהול מלאי, לקוחות, מכירות ובינה מלאכותית. קח את העסק שלך לשלב הבא עם SmartStock.</p>
+                        <div class="d-flex gap-3 justify-content-center justify-content-lg-start">
+                            <button class="btn btn-primary btn-lg px-5 py-3 rounded-pill fw-bold shadow-lg" onclick="goToAuth()">התחל עכשיו בחינם <i class="fas fa-arrow-left ms-2"></i></button>
+                            <button class="btn btn-outline-light btn-lg px-4 py-3 rounded-pill fw-bold" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">למד עוד</button>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 d-none d-lg-block text-center">
+                        <img src="https://cdni.iconscout.com/illustration/premium/thumb/business-analysis-4500958-3734608.png" style="width:80%; filter: drop-shadow(0 0 20px rgba(0,0,0,0.2));">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section id="features" class="py-5" style="margin-top: -50px; position: relative; z-index: 2;">
+            <div class="container">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-boxes"></i></div>
+                            <h4>ניהול מלאי חכם</h4>
+                            <p class="text-muted">מעקב בזמן אמת אחרי מוצרים, התראות מלאי נמוך וניהול ספקים בקליק.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-robot"></i></div>
+                            <h4>דוחות AI מתקדמים</h4>
+                            <p class="text-muted">ניתוח אוטומטי של המכירות, תחזיות גמר מלאי וזיהוי מוצרים רווחיים (ABC).</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-cash-register"></i></div>
+                            <h4>קופה ולקוחות</h4>
+                            <p class="text-muted">קופה מהירה, הפקת קבלות בוואטסאפ וניהול כרטסת לקוחות מלאה (CRM).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="contact-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center mb-5">
+                        <h2 class="fw-bold">יש לך שאלה? אנחנו כאן.</h2>
+                        <p class="text-muted">השאר פרטים ונחזור אליך בהקדם עם הדגמה אישית.</p>
+                    </div>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="p-4 bg-light rounded-4 border">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">שם מלא</label>
+                                <input type="text" id="contact-name" class="form-control" placeholder="ישראל ישראלי">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">טלפון</label>
+                                <input type="tel" id="contact-phone" class="form-control" placeholder="050-0000000">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">הודעה</label>
+                                <textarea id="contact-msg" class="form-control" rows="3"></textarea>
+                            </div>
+                            <button class="btn btn-dark w-100 py-3 fw-bold rounded-3" onclick="sendContact()">שלח הודעה</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="auth-section" class="container auth-container d-none">
+        <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-3" onclick="showLanding()"><i class="fas fa-times"></i></button>
         <div class="stat-card p-5 text-center">
             <div class="mb-4 text-primary" style="font-size: 3rem;"><i class="fas fa-cubes"></i></div>
             <h2 class="fw-bold mb-4">SmartStock</h2>
@@ -412,8 +550,42 @@
         let token = localStorage.getItem('token'), prods=[], custs=[], cats=[], sups=[], cart={}, lastOrder={}, charts={};
         let html5QrcodeScanner;
 
-        if(token) init();
+        // ** לוגיקה חדשה לבדיקת התחברות או הצגת דף נחיתה **
+        checkAuth();
         
+        function checkAuth() {
+            if (token) {
+                // אם יש טוקן שמור - דלג ישירות לאפליקציה
+                init();
+            } else {
+                // אחרת - וודא שדף הנחיתה מוצג
+                showLanding();
+            }
+        }
+
+        function showLanding() {
+            document.getElementById('landing-section').classList.remove('d-none');
+            document.getElementById('auth-section').classList.add('d-none');
+            document.getElementById('app-section').classList.add('d-none');
+        }
+
+        function goToAuth() {
+            document.getElementById('landing-section').classList.add('d-none');
+            document.getElementById('auth-section').classList.remove('d-none');
+        }
+        
+        function sendContact() {
+            const name = document.getElementById('contact-name').value;
+            const phone = document.getElementById('contact-phone').value;
+            if(!name || !phone) return alert('נא למלא שם וטלפון');
+            
+            // סימולציה של שליחת טופס
+            alert('תודה ' + name + '! ההודעה נשלחה בהצלחה, נחזור אליך למספר ' + phone);
+            document.getElementById('contact-name').value = '';
+            document.getElementById('contact-phone').value = '';
+            document.getElementById('contact-msg').value = '';
+        }
+
         function toggleAuth(type) {
             document.getElementById('form-login').classList.toggle('d-none', type!=='login');
             document.getElementById('form-register').classList.toggle('d-none', type!=='register');
@@ -436,11 +608,15 @@
         }
 
         async function init() {
+            // הסתרת דפי נחיתה והתחברות
+            document.getElementById('landing-section').classList.add('d-none');
             document.getElementById('auth-section').classList.add('d-none');
+            
+            // הצגת האפליקציה
             document.getElementById('app-section').classList.remove('d-none');
             document.getElementById('app-section').classList.add('d-flex');
             await loadData();
-            loadProfileData(); // טעינת נתוני פרופיל בנפרד
+            loadProfileData(); 
         }
 
         async function loadData() {
@@ -653,7 +829,6 @@
             `).join('');
         }
 
-        // --- NEW: פונקציה לצפייה בפרטי הזמנה ---
         async function viewOrder(oid) {
             document.getElementById('oi-id').innerText = oid;
             const res = await fetch(`${API}/orders/${oid}/items`, {headers:{'Authorization':token}});
@@ -691,7 +866,6 @@
             ).join('');
         }
 
-        // --- NEW: עריכת לקוח ---
         function editCust(cid) {
             const c = custs.find(x => x.id === cid);
             if(!c) return;
@@ -703,7 +877,6 @@
             new bootstrap.Modal(document.getElementById('custModal')).show();
         }
         
-        // --- NEW: איפוס מודל לקוח ביצירה חדשה ---
         function openCustModal(){ 
             document.getElementById('c-id').value = '';
             document.getElementById('c-name').value = '';
@@ -738,7 +911,6 @@
              loadData();
         }
 
-        // --- UPDATED: שמירת לקוח (תומך בעריכה וביצירה) ---
         async function saveCust(){
             const cid = document.getElementById('c-id').value;
             const body = { 
@@ -768,7 +940,6 @@
             renderCusts();
         }
 
-        // --- NEW: לוגיקת המרת תמונה ל-Base64 ---
         function convertLogo(input) {
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
@@ -780,7 +951,6 @@
             }
         }
 
-        // --- NEW: טעינת ושמירת פרופיל ---
         async function loadProfileData() {
             const res = await fetch(`${API}/profile`, {headers:{'Authorization':token}});
             const d = await res.json();
@@ -794,7 +964,7 @@
             if(d.logo_url && d.logo_url.startsWith('data:image')) {
                 document.getElementById('prof-logo-preview').src = d.logo_url;
                 document.getElementById('prof-logo-b64').value = d.logo_url;
-                document.getElementById('nav-logo').src = d.logo_url; // עדכון לוגו בסרגל
+                document.getElementById('nav-logo').src = d.logo_url;
             }
         }
 
@@ -805,12 +975,12 @@
                 contact_name: document.getElementById('prof-contact').value,
                 phone: document.getElementById('prof-phone').value,
                 email: document.getElementById('prof-email').value,
-                logo_url: document.getElementById('prof-logo-b64').value // שולח את התמונה כ-Base64
+                logo_url: document.getElementById('prof-logo-b64').value
             };
 
             await fetch(`${API}/profile`, {method:'PUT',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(body)});
             alert('הגדרות נשמרו בהצלחה!');
-            loadProfileData(); // רענון
+            loadProfileData(); 
         }
         
         async function addCat() {
