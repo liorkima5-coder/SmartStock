@@ -127,7 +127,6 @@ def handle_customers():
         return jsonify(supabase.table("customers").select("*").eq("user_id", user_id).execute().data), 200
     except Exception as e: return jsonify({"error": str(e)}), 400
 
-# *** תוקן: הוספת שיטת PUT לעריכת לקוחות ***
 @app.route('/customers/<int:id>', methods=['PUT', 'DELETE'])
 def handle_single_customer(id):
     token = request.headers.get('Authorization')
@@ -204,10 +203,7 @@ def handle_orders():
 def get_order_items(oid):
     token = request.headers.get('Authorization')
     try:
-        # בדיקת הרשאות בסיסית - לוודא שההזמנה שייכת למשתמש
         user_id = supabase.auth.get_user(token.replace("Bearer ", "")).user.id
-        # אנחנו סומכים על זה שהמסד יחזיר ריק אם ה-ID לא תואם, או שניתן להוסיף שאילתה כפולה. 
-        # כאן נשלוף ישירות פריטים.
         res = supabase.table("order_items").select("*").eq("order_id", oid).execute()
         return jsonify(res.data), 200
     except Exception as e: return jsonify({"error": str(e)}), 400
@@ -286,7 +282,7 @@ def get_stats():
         total_items = len(prods)
         total_inventory_value = sum([p['quantity'] * (p.get('cost_price') or 0) for p in prods])
         total_sales = sum([o['total_amount'] for o in orders])
-        low_stock = len([p for p in prods if p['quantity'] <= p['reorder_level']]) if prods else 0 # Fix safety
+        low_stock = len([p for p in prods if p['quantity'] <= p['reorder_level']]) if prods else 0
 
         total_profit = 0
         if orders:
