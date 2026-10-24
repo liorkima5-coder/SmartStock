@@ -1,0 +1,275 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Tokens. Light by default, dark via system preference or manual toggle.
+   ------------------------------------------------------------------ */
+:root {
+  --bg: #edf0ef;
+  --surface: #ffffff;
+  --surface-2: #f5f7f6;
+  --ink: #18222c;
+  --muted: #5e6b74;
+  --line: #d5dcda;
+  --brand: #0e6b57;
+  --brand-hover: #0b5947;
+  --brand-ink: #ffffff;
+  --brand-soft: #dcefe9;
+  --tag: #ffd43b;
+  --tag-ink: #2a2200;
+  --warn: #c2410c;
+  --warn-soft: #fdebdd;
+  --ok: #15803d;
+  --ok-soft: #dcf3e3;
+  --chart: #0a8566;
+  --shadow: 0 1px 2px rgb(24 34 44 / 0.06), 0 8px 24px -12px rgb(24 34 44 / 0.18);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10161b;
+    --surface: #172027;
+    --surface-2: #1d2830;
+    --ink: #e6ecea;
+    --muted: #94a3ab;
+    --line: #2a3740;
+    --brand: #3bc39e;
+    --brand-hover: #55d0ae;
+    --brand-ink: #062a20;
+    --brand-soft: #133a31;
+    --tag: #f5c518;
+    --tag-ink: #241c00;
+    --warn: #fb8a4c;
+    --warn-soft: #3a2116;
+    --ok: #4ade80;
+    --ok-soft: #12321f;
+    --chart: #25a07f;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #10161b;
+  --surface: #172027;
+  --surface-2: #1d2830;
+  --ink: #e6ecea;
+  --muted: #94a3ab;
+  --line: #2a3740;
+  --brand: #3bc39e;
+  --brand-hover: #55d0ae;
+  --brand-ink: #062a20;
+  --brand-soft: #133a31;
+  --tag: #f5c518;
+  --tag-ink: #241c00;
+  --warn: #fb8a4c;
+  --warn-soft: #3a2116;
+  --ok: #4ade80;
+  --ok-soft: #12321f;
+  --chart: #25a07f;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-tag: var(--tag);
+  --color-tag-ink: var(--tag-ink);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-chart: var(--chart);
+  --font-sans: "IBM Plex Sans Hebrew", system-ui, sans-serif;
+  /* Digits and ₪ come from Barlow Condensed (unambiguous numerals); Hebrew letters fall through to Karantina */
+  --font-display: "Barlow Condensed", "Karantina", "IBM Plex Sans Hebrew", system-ui, sans-serif;
+  --shadow-panel: var(--shadow);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+}
+
+/* Numbers line up in tables and totals */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Prices and big figures use the condensed display face, like a shelf price tag */
+.figure {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+/* iOS zooms into inputs below 16px */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ------------------------------------------------------------------
+   The receipt: a thermal-printer strip with a torn edge
+   ------------------------------------------------------------------ */
+.receipt {
+  --tooth: 8px;
+  background: var(--surface);
+  position: relative;
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tooth) + 0.5px) no-repeat;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tooth) + 0.5px) no-repeat;
+  padding-bottom: calc(var(--tooth) + 12px);
+}
+
+.receipt-rule {
+  border: 0;
+  border-top: 1.5px dashed var(--line);
+}
+
+/* Shelf tag for prices on product tiles */
+.price-tag {
+  background: var(--tag);
+  color: var(--tag-ink);
+  border-radius: 4px;
+  position: relative;
+  /* hole on the right edge (start in RTL), price reads to its left */
+  padding-right: 15px;
+  padding-left: 8px;
+}
+.price-tag::before {
+  content: "";
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+@utility anim-sheet { animation: sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@utility anim-fade { animation: fade-in 0.18s ease-out; }
+@utility anim-pop { animation: pop-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@utility anim-bump { animation: bump 0.3s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Printing a receipt: only the receipt is printed, sized for 80mm paper
+   ------------------------------------------------------------------ */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+    color: #000 !important;
+  }
+  [role="dialog"],
+  [role="dialog"] * {
+    max-height: none !important;
+    overflow: visible !important;
+    animation: none !important;
+    transform: none !important;
+  }
+  .print-area {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: auto;
+    width: 72mm;
+    background: #fff !important;
+    -webkit-mask: none !important;
+    mask: none !important;
+    box-shadow: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
